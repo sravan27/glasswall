@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a Glasswall defect or regression.
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened
+      description: Describe the defect and the impact.
+      placeholder: Glasswall skipped a supported remediation path for an exact-pinned requirements.txt file.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include commands, repo shape, or payloads needed to reproduce the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Glasswall version or commit
+      placeholder: main @ e6b7777
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, CI provider, or GitHub App mode details.

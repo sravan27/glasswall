@@ -22,6 +22,11 @@ class Settings:
     github_api_base_url: str
     github_api_version: str
     github_comment_mode: str
+    github_auto_pr_mode: str
+    github_auto_pr_branch: str
+    github_auto_pr_max_upgrades: int
+    github_auto_pr_commit_message: str
+    github_auto_pr_title: str
 
 
 def load_settings() -> Settings:
@@ -39,4 +44,15 @@ def load_settings() -> Settings:
         github_api_base_url=os.environ.get("GLASSWALL_GITHUB_API_BASE_URL", "https://api.github.com"),
         github_api_version=os.environ.get("GLASSWALL_GITHUB_API_VERSION", "2026-03-10"),
         github_comment_mode=os.environ.get("GLASSWALL_GITHUB_COMMENT_MODE", "upsert"),
+        github_auto_pr_mode=os.environ.get("GLASSWALL_GITHUB_AUTO_PR_MODE", "off"),
+        github_auto_pr_branch=os.environ.get("GLASSWALL_GITHUB_AUTO_PR_BRANCH", "glasswall/remediation"),
+        github_auto_pr_max_upgrades=int(os.environ.get("GLASSWALL_GITHUB_AUTO_PR_MAX_UPGRADES", "3")),
+        github_auto_pr_commit_message=os.environ.get(
+            "GLASSWALL_GITHUB_AUTO_PR_COMMIT_MESSAGE",
+            "glasswall remediation",
+        ),
+        github_auto_pr_title=os.environ.get(
+            "GLASSWALL_GITHUB_AUTO_PR_TITLE",
+            "[glasswall] apply top supported patch-gap remediation",
+        ),
     )

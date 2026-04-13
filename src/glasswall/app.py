@@ -328,6 +328,9 @@ def _github_status(settings: Settings) -> dict[str, object]:
         "private_key_configured": private_key_configured,
         "webhook_secret_configured": webhook_secret_configured,
         "comment_mode": settings.github_comment_mode,
+        "auto_pr_mode": settings.github_auto_pr_mode,
+        "auto_pr_branch": settings.github_auto_pr_branch,
+        "auto_pr_max_upgrades": settings.github_auto_pr_max_upgrades,
         "api_base_url": settings.github_api_base_url,
         "api_version": settings.github_api_version,
     }

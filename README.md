@@ -155,6 +155,7 @@ Current behavior:
 - accepts pull request `opened`, `reopened`, `synchronize`, and `ready_for_review` events
 - scans the PR head commit, including forked pull requests
 - renders a remediation-first comment and updates it in place by default
+- can open or update a remediation PR from `push` events on the default branch when auto-PR mode is enabled
 
 Required environment:
 
@@ -167,6 +168,11 @@ Optional GitHub environment:
 - `GLASSWALL_GITHUB_API_BASE_URL` default: `https://api.github.com`
 - `GLASSWALL_GITHUB_API_VERSION` default: `2026-03-10`
 - `GLASSWALL_GITHUB_COMMENT_MODE` values: `upsert`, `create`, `off`
+- `GLASSWALL_GITHUB_AUTO_PR_MODE` values: `off`, `push`
+- `GLASSWALL_GITHUB_AUTO_PR_BRANCH` default: `glasswall/remediation`
+- `GLASSWALL_GITHUB_AUTO_PR_MAX_UPGRADES` default: `3`
+- `GLASSWALL_GITHUB_AUTO_PR_COMMIT_MESSAGE` default: `glasswall remediation`
+- `GLASSWALL_GITHUB_AUTO_PR_TITLE` default: `[glasswall] apply top supported patch-gap remediation`
 
 Run the server and point your GitHub App webhook at:
 
@@ -202,6 +208,11 @@ POST /github/webhooks
 - `GLASSWALL_GITHUB_API_BASE_URL`: GitHub API base URL.
 - `GLASSWALL_GITHUB_API_VERSION`: GitHub API version header value.
 - `GLASSWALL_GITHUB_COMMENT_MODE`: `upsert`, `create`, or `off`.
+- `GLASSWALL_GITHUB_AUTO_PR_MODE`: `off` or `push`.
+- `GLASSWALL_GITHUB_AUTO_PR_BRANCH`: branch name used for auto remediation PRs.
+- `GLASSWALL_GITHUB_AUTO_PR_MAX_UPGRADES`: number of top supported upgrades to apply in automation.
+- `GLASSWALL_GITHUB_AUTO_PR_COMMIT_MESSAGE`: commit message used for auto remediation commits.
+- `GLASSWALL_GITHUB_AUTO_PR_TITLE`: PR title used for auto remediation branches.
 
 ## Repo Workflows
 
@@ -209,6 +220,7 @@ POST /github/webhooks
 - Security reporting guidance lives in [SECURITY.md](/Users/sravansridhar/Documents/Codex/glasswall/SECURITY.md).
 - The repository is MIT-licensed via [LICENSE](/Users/sravansridhar/Documents/Codex/glasswall/LICENSE).
 - The category thesis and product path live in [ROADMAP.md](/Users/sravansridhar/Documents/Codex/glasswall/ROADMAP.md).
+- Contribution guidance lives in [CONTRIBUTING.md](/Users/sravansridhar/Documents/Codex/glasswall/CONTRIBUTING.md).
 
 ## Docker
 

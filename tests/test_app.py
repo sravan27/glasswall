@@ -32,6 +32,11 @@ def test_github_webhook_endpoint_verifies_signature_and_queues_processing(tmp_pa
         github_api_base_url="https://api.github.com",
         github_api_version="2026-03-10",
         github_comment_mode="upsert",
+        github_auto_pr_mode="off",
+        github_auto_pr_branch="glasswall/remediation",
+        github_auto_pr_max_upgrades=3,
+        github_auto_pr_commit_message="glasswall remediation",
+        github_auto_pr_title="[glasswall] apply top supported patch-gap remediation",
     )
     processor = StubWebhookProcessor()
     client = TestClient(create_app(settings=settings, webhook_processor=processor))
@@ -69,6 +74,11 @@ def test_github_status_api_reports_configuration_state(tmp_path) -> None:
         github_api_base_url="https://api.github.com",
         github_api_version="2026-03-10",
         github_comment_mode="off",
+        github_auto_pr_mode="off",
+        github_auto_pr_branch="glasswall/remediation",
+        github_auto_pr_max_upgrades=3,
+        github_auto_pr_commit_message="glasswall remediation",
+        github_auto_pr_title="[glasswall] apply top supported patch-gap remediation",
     )
     client = TestClient(create_app(settings=settings))
 
@@ -118,6 +128,11 @@ def test_remediate_api_returns_dry_run_result(tmp_path) -> None:
         github_api_base_url="https://api.github.com",
         github_api_version="2026-03-10",
         github_comment_mode="off",
+        github_auto_pr_mode="off",
+        github_auto_pr_branch="glasswall/remediation",
+        github_auto_pr_max_upgrades=3,
+        github_auto_pr_commit_message="glasswall remediation",
+        github_auto_pr_title="[glasswall] apply top supported patch-gap remediation",
     )
     client = TestClient(create_app(settings=settings, service=StubService()))
 

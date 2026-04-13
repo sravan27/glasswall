@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/sravan27/glasswall/discussions
+    about: Ask questions, share adoption notes, or discuss design directions.
+  - name: Security policy
+    url: https://github.com/sravan27/glasswall/blob/main/SECURITY.md
+    about: Report sensitive security issues privately.

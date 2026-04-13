@@ -1,0 +1,28 @@
+name: Patch-gap case
+description: Share a real-world public-fix case Glasswall should detect, prioritize, or remediate better.
+title: "[case] "
+labels:
+  - patch-gap-case
+body:
+  - type: textarea
+    id: case
+    attributes:
+      label: Case summary
+      description: Explain the public fix or advisory event and why it matters operationally.
+      placeholder: A fix landed upstream before downstream teams realized the exploit window had changed.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Link the advisory, release notes, commit diff, PR, or vendor bulletin.
+    validations:
+      required: true
+  - type: textarea
+    id: desired
+    attributes:
+      label: What Glasswall should do
+      description: Detection, prioritization, remediation, workflow, or reporting improvement.
+    validations:
+      required: true
