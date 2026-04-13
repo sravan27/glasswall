@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Glasswall</title>
+    <meta
+      name="description"
+      content="Glasswall is patch-gap operations for public fixes: scan, prioritize, remediate, and pressure teams to patch."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">Glasswall / Patch-Gap Operations</p>
+        <h1>Public fixes should create action before attackers create pressure.</h1>
+        <p class="lede">
+          Glasswall is a GitHub-native patch-gap operations tool. It ranks public-fix exposure, plans the
+          smallest safe upgrades, and can open remediation pull requests before backlog culture turns a known
+          problem into an exploited one.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="https://github.com/sravan27/glasswall">Open repo</a>
+          <a class="button" href="https://github.com/sravan27/glasswall/releases/tag/v0.2.0">Read release</a>
+          <a class="button" href="https://github.com/sravan27/glasswall/issues">Roadmap issues</a>
+        </div>
+      </section>
+
+      <section class="band">
+        <article class="card span-two">
+          <p class="card-label">What it solves</p>
+          <h2>The gap after a fix lands and before most teams patch.</h2>
+          <p>
+            Most tooling is built for inventory, compliance, or broad CVE visibility. Glasswall is built for the
+            narrower and uglier problem that matters when exploit development gets faster: a public fix landed,
+            and you need to know what is newly dangerous right now.
+          </p>
+        </article>
+        <article class="card metric">
+          <span>Signal</span>
+          <strong>Patch-gap urgency</strong>
+        </article>
+        <article class="card metric">
+          <span>Action</span>
+          <strong>Remediation PRs</strong>
+        </article>
+      </section>
+
+      <section class="workflow">
+        <div class="section-head">
+          <p class="eyebrow">Workflow</p>
+          <h2>One queue across CLI, API, Actions, and GitHub App mode.</h2>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <strong>1. Scan</strong>
+            <p>Parse resolved manifests, enrich OSV and CISA KEV data, and rank urgency with explicit rationale.</p>
+          </article>
+          <article class="step">
+            <strong>2. Plan</strong>
+            <p>Choose the lowest version that clears the visible advisory set and keep unsupported paths explicit.</p>
+          </article>
+          <article class="step">
+            <strong>3. Remediate</strong>
+            <p>Apply safe supported upgrades locally or in CI, then surface the change as a GitHub-native workflow.</p>
+          </article>
+          <article class="step">
+            <strong>4. Pressure</strong>
+            <p>Use PR comments, remediation branches, and later MTTP analytics so public-fix risk becomes hard to ignore.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="showcase">
+        <article class="panel">
+          <p class="card-label">Why GitHub-native matters</p>
+          <ul>
+            <li>PR comments keep patch-gap visibility where code review already happens.</li>
+            <li>GitHub Actions can fail on urgency thresholds and emit SARIF plus remediation summaries.</li>
+            <li>Webhook-driven remediation PRs turn a ranked finding into a branch and pull request.</li>
+          </ul>
+        </article>
+        <article class="panel dark">
+          <p class="card-label">Category thesis</p>
+          <blockquote>
+            Vulnerability scanners count problems. Patch-gap operations compress time between public fix and real
+            patching.
+          </blockquote>
+          <p>The metric to own is mean time to patch after public fix. Everything in Glasswall points toward that.</p>
+        </article>
+      </section>
+
+      <section class="footer-band">
+        <a href="https://github.com/sravan27/glasswall">Repository</a>
+        <a href="https://github.com/sravan27/glasswall/issues/8">MTTP issue</a>
+        <a href="https://github.com/sravan27/glasswall/issues/9">Node remediation issue</a>
+        <a href="https://github.com/sravan27/glasswall/issues/10">Silent fix radar issue</a>
+      </section>
+    </main>
+  </body>
+</html>

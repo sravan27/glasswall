@@ -3,6 +3,7 @@
 [![CI](https://github.com/sravan27/glasswall/actions/workflows/ci.yml/badge.svg)](https://github.com/sravan27/glasswall/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-154c57)](https://github.com/sravan27/glasswall/blob/main/LICENSE)
 [![Patch-Gap Operations](https://img.shields.io/badge/focus-patch--gap%20operations-c66030)](https://github.com/sravan27/glasswall/blob/main/ROADMAP.md)
+[![Site](https://img.shields.io/badge/site-live-8a6a16)](https://sravan27.github.io/glasswall/)
 
 Glasswall is a local-first defensive scanner for the patch gap: the dangerous window after a fix or advisory becomes public and before most teams actually patch.
 
@@ -217,6 +218,7 @@ POST /github/webhooks
 ## Repo Workflows
 
 - CI runs on Python 3.12 and 3.13 via [ci.yml](/Users/sravansridhar/Documents/Codex/glasswall/.github/workflows/ci.yml).
+- GitHub Pages deploys the public landing page from [pages.yml](/Users/sravansridhar/Documents/Codex/glasswall/.github/workflows/pages.yml).
 - Security reporting guidance lives in [SECURITY.md](/Users/sravansridhar/Documents/Codex/glasswall/SECURITY.md).
 - The repository is MIT-licensed via [LICENSE](/Users/sravansridhar/Documents/Codex/glasswall/LICENSE).
 - The category thesis and product path live in [ROADMAP.md](/Users/sravansridhar/Documents/Codex/glasswall/ROADMAP.md).

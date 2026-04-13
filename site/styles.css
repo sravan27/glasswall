@@ -1,0 +1,223 @@
+:root {
+  --bg: #f2e6d2;
+  --ink: #17130f;
+  --muted: #5d5347;
+  --line: rgba(39, 31, 23, 0.12);
+  --teal: #154c57;
+  --copper: #c46233;
+  --gold: #8a6a16;
+  --panel: rgba(255, 250, 243, 0.86);
+  --panel-strong: rgba(255, 252, 247, 0.94);
+  --shadow: 0 24px 70px rgba(58, 37, 16, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(21, 76, 87, 0.18), transparent 28rem),
+    radial-gradient(circle at 92% 8%, rgba(196, 98, 51, 0.18), transparent 22rem),
+    linear-gradient(180deg, #f4ead9 0%, var(--bg) 50%, #ead8bf 100%);
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+
+a {
+  color: var(--teal);
+  text-decoration: none;
+}
+
+.page {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 1.2rem 0 4rem;
+}
+
+.hero,
+.card,
+.step,
+.panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.hero {
+  padding: 2.4rem;
+  border-radius: 30px;
+}
+
+.eyebrow,
+.card-label {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.hero h1,
+.band h2,
+.section-head h2 {
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+  letter-spacing: -0.04em;
+}
+
+.hero h1 {
+  margin: 0.55rem 0 0;
+  max-width: 11ch;
+  font-size: clamp(3rem, 6vw, 5.8rem);
+  line-height: 0.92;
+}
+
+.lede {
+  max-width: 48rem;
+  color: var(--muted);
+  line-height: 1.7;
+  font-size: 1.05rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1.4rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(21, 76, 87, 0.16);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.button-primary {
+  background: linear-gradient(135deg, var(--teal), #286c78);
+  color: #fff8f0;
+  border: none;
+}
+
+.band,
+.showcase {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.card,
+.step,
+.panel {
+  padding: 1.3rem;
+  border-radius: 24px;
+}
+
+.span-two {
+  grid-column: span 2;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  min-height: 12rem;
+  background: var(--panel-strong);
+}
+
+.metric span {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+}
+
+.metric strong {
+  margin-top: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.workflow {
+  margin-top: 1.2rem;
+}
+
+.section-head h2 {
+  margin: 0.45rem 0 0;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 0.98;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 0.9rem;
+}
+
+.step {
+  background: var(--panel-strong);
+}
+
+.step strong {
+  display: block;
+  font-size: 1.1rem;
+}
+
+.step p,
+.card p,
+.panel p,
+.panel li {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.panel.dark {
+  background: rgba(24, 22, 19, 0.92);
+  color: #f8ecde;
+}
+
+.panel.dark p,
+.panel.dark blockquote {
+  color: #f1dfca;
+}
+
+blockquote {
+  margin: 1rem 0 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+  font-size: 1.4rem;
+  line-height: 1.35;
+}
+
+.footer-band {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.2rem 0 0.2rem;
+}
+
+.footer-band a {
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(21, 76, 87, 0.08);
+}
+
+@media (max-width: 960px) {
+  .band,
+  .showcase,
+  .steps {
+    grid-template-columns: 1fr;
+  }
+
+  .span-two {
+    grid-column: span 1;
+  }
+}
