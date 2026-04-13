@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Glasswall</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="masthead">
+        <div class="hero-card">
+          <p class="eyebrow">Glasswall / Patch-Gap Operations</p>
+          <h1 class="hero-title">Public fixes should create pressure, not paperwork.</h1>
+          <p class="hero-copy">
+            Glasswall ranks the window between public fix and real patching, then turns the result into a
+            remediation queue that can live locally, in CI, and inside GitHub pull requests.
+          </p>
+
+          <form action="/scan" method="post" class="scan-form">
+            <div class="field-grid">
+              <label class="field" for="path">
+                <span>Repository path</span>
+                <input id="path" name="path" type="text" value="{{ default_path }}" required />
+              </label>
+              <label class="field" for="policy_path">
+                <span>Policy path (optional)</span>
+                <input
+                  id="policy_path"
+                  name="policy_path"
+                  type="text"
+                  value="{{ default_policy_path or '' }}"
+                  placeholder=".glasswall.yml"
+                />
+              </label>
+            </div>
+            <div class="action-row">
+              <button type="submit">Run scan</button>
+              <p class="form-note">Local-first by default. GitHub App mode can mirror the same queue into pull requests.</p>
+            </div>
+          </form>
+
+          {% if error %}
+          <p class="alert">{{ error }}</p>
+          {% endif %}
+        </div>
+
+        <aside class="status-card">
+          <div class="status-head">
+            <div>
+              <p class="eyebrow">Workflow posture</p>
+              <h2>Make the queue impossible to ignore.</h2>
+            </div>
+            <span class="state-pill {% if github_status.configured %}state-pill-armed{% else %}state-pill-local{% endif %}">
+              {{ github_status.mode }}
+            </span>
+          </div>
+          <p class="panel-copy">{{ github_status.summary }}</p>
+
+          <div class="status-grid">
+            <div class="status-item">
+              <span>App ID</span>
+              <strong>{{ "configured" if github_status.app_id_configured else "missing" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Private key</span>
+              <strong>{{ "configured" if github_status.private_key_configured else "missing" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Webhook secret</span>
+              <strong>{{ "configured" if github_status.webhook_secret_configured else "missing" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Comment mode</span>
+              <strong>{{ github_status.comment_mode }}</strong>
+            </div>
+          </div>
+
+          <div class="command-deck">
+            <p class="panel-label">Operator deck</p>
+            <code>glasswall plan /repo --format markdown</code>
+            <code>glasswall scan /repo --format sarif --fail-on urgent</code>
+            <code>POST /github/webhooks</code>
+          </div>
+        </aside>
+      </section>
+
+      {% if latest %}
+      <section class="metric-band">
+        <article class="metric-card metric-card-wide">
+          <span class="metric-label">Selected scan</span>
+          <strong>{{ latest.target_path }}</strong>
+          <span class="metric-meta">#{{ latest.scan_id }} · {{ latest.generated_at }}</span>
+          {% if active_policy_path %}
+          <span class="metric-meta">Policy: {{ active_policy_path }}</span>
+          {% endif %}
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Dependencies</span>
+          <strong>{{ latest.dependency_count }}</strong>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Findings</span>
+          <strong>{{ latest.finding_count }}</strong>
+        </article>
+        <article class="metric-card metric-hot">
+          <span class="metric-label">Critical now</span>
+          <strong>{{ stats.critical_now }}</strong>
+        </article>
+        <article class="metric-card metric-urgent">
+          <span class="metric-label">Urgent</span>
+          <strong>{{ stats.urgent }}</strong>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Patch-gap items</span>
+          <strong>{{ stats.patch_gap }}</strong>
+        </article>
+      </section>
+
+      <section class="signal-grid">
+        <article class="panel panel-emphasis">
+          <p class="panel-label">Delta from previous scan</p>
+          {% if delta %}
+          <div class="delta-grid">
+            <div>
+              <strong>{{ delta.new_findings | length }}</strong>
+              <span>new</span>
+            </div>
+            <div>
+              <strong>{{ delta.resolved_findings | length }}</strong>
+              <span>resolved</span>
+            </div>
+            <div>
+              <strong>{{ delta.escalated_findings | length }}</strong>
+              <span>escalated</span>
+            </div>
+            <div>
+              <strong>{{ delta.deescalated_findings | length }}</strong>
+              <span>de-escalated</span>
+            </div>
+          </div>
+          {% if delta.new_findings %}
+          <ul class="mini-list">
+            {% for finding in delta.new_findings[:4] %}
+            <li>[{{ finding.urgency_label }}] {{ finding.dependency.name }} {{ finding.vulnerability.canonical_id }}</li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="panel-copy">No newly introduced findings relative to the previous scan for this target.</p>
+          {% endif %}
+          {% else %}
+          <p class="panel-copy">No previous scan exists for this target yet, so the current result is the baseline.</p>
+          {% endif %}
+        </article>
+
+        <article class="panel">
+          <p class="panel-label">Recent scans for this target</p>
+          {% if history %}
+          <ul class="history-list">
+            {% for entry in history %}
+            <li>
+              <a href="/?scan_id={{ entry.scan_id }}">
+                <strong>#{{ entry.scan_id }}</strong>
+                <span>{{ entry.generated_at }}</span>
+                <span>{{ entry.top_urgency_label or "none" }} · {{ entry.finding_count }} findings</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="panel-copy">No scan history yet for this target.</p>
+          {% endif %}
+        </article>
+
+        <article class="panel">
+          <p class="panel-label">Integration status</p>
+          <p class="panel-copy">API base: <code>{{ github_status.api_base_url }}</code></p>
+          <p class="panel-copy">GitHub API version: <code>{{ github_status.api_version }}</code></p>
+          <p class="panel-copy">Top urgency in view: <code>{{ latest.top_urgency_label or "none" }}</code></p>
+          <p class="panel-copy">The UI mirrors the same queue the CLI and GitHub Action emit, so triage stays consistent across surfaces.</p>
+        </article>
+      </section>
+
+      {% if plan %}
+      <section class="queue-stage">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Remediation queue</p>
+            <h2>Upgrade path, ranked for action.</h2>
+          </div>
+          <span class="queue-meta">{{ plan.recommendation_count }} recommendation{% if plan.recommendation_count != 1 %}s{% endif %}</span>
+        </div>
+
+        {% if top_recommendation %}
+        <div class="queue-layout">
+          <article class="queue-feature urgency-{{ top_recommendation.urgency_label }}">
+            <p class="panel-label">Top move now</p>
+            <h3>{{ top_recommendation.name }} {{ top_recommendation.current_version }} → {{ top_recommendation.target_version or "manual review" }}</h3>
+            <p class="queue-copy">
+              {{ top_recommendation.rationale[0] if top_recommendation.rationale else "No rationale available." }}
+            </p>
+            <div class="queue-tags">
+              <span class="chip">{{ top_recommendation.urgency_label }}</span>
+              <span class="chip">{{ top_recommendation.action }}</span>
+              {% if top_recommendation.patch_gap %}<span class="chip chip-hot">patch gap</span>{% endif %}
+              {% if top_recommendation.latest_version %}<span class="chip">latest {{ top_recommendation.latest_version }}</span>{% endif %}
+            </div>
+            <ul class="rationale">
+              {% for reason in top_recommendation.rationale %}
+              <li>{{ reason }}</li>
+              {% endfor %}
+            </ul>
+            <p class="panel-copy advisory-line">
+              Advisories: {{ top_recommendation.advisories | join(", ") }}
+            </p>
+          </article>
+
+          <div class="queue-stack">
+            {% for recommendation in remaining_recommendations %}
+            <article class="queue-item urgency-{{ recommendation.urgency_label }}">
+              <div class="queue-item-head">
+                <strong>{{ recommendation.name }}</strong>
+                <span>{{ recommendation.urgency_label }}</span>
+              </div>
+              <p>{{ recommendation.current_version }} → {{ recommendation.target_version or "manual review" }}</p>
+              <p class="panel-copy">{{ recommendation.action }}</p>
+            </article>
+            {% endfor %}
+            {% if not remaining_recommendations %}
+            <article class="queue-item queue-item-empty">
+              <strong>Queue is focused</strong>
+              <p>Only one actionable upgrade is currently above the active policy threshold.</p>
+            </article>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <article class="panel panel-quiet">
+          <p class="panel-copy">No actionable upgrades met the active policy. The current scan is clean relative to your configured threshold.</p>
+        </article>
+        {% endif %}
+      </section>
+      {% elif plan_error %}
+      <section class="panel panel-quiet">
+        <p class="panel-label">Remediation queue</p>
+        <p class="panel-copy">Could not refresh remediation metadata: {{ plan_error }}</p>
+      </section>
+      {% endif %}
+
+      <section class="findings-stage">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Findings</p>
+            <h2>Evidence and urgency, without filler.</h2>
+          </div>
+        </div>
+
+        {% if findings %}
+        <div class="findings-grid">
+          {% for finding in findings %}
+          <article class="finding urgency-{{ finding.urgency_label }}">
+            <header class="finding-header">
+              <div>
+                <p class="finding-package">{{ finding.dependency.name }} <span>{{ finding.dependency.version }}</span></p>
+                <p class="finding-meta">{{ finding.dependency.ecosystem }} via {{ finding.dependency.source_file }}</p>
+              </div>
+              <div class="finding-score">
+                <span class="score-label">{{ finding.urgency_label }}</span>
+                <strong>{{ finding.urgency_score }}</strong>
+              </div>
+            </header>
+
+            <div class="finding-body">
+              <p class="finding-id">
+                {{ finding.vulnerability.canonical_id }}{% if finding.vulnerability.aliases %} · {{ finding.vulnerability.aliases | join(", ") }}{% endif %}
+              </p>
+              {% if finding.vulnerability.summary %}
+              <p>{{ finding.vulnerability.summary }}</p>
+              {% elif finding.vulnerability.details %}
+              <p>{{ finding.vulnerability.details[:260] }}{% if finding.vulnerability.details|length > 260 %}...{% endif %}</p>
+              {% else %}
+              <p>No summary was provided by the upstream advisory feed.</p>
+              {% endif %}
+
+              <ul class="rationale">
+                {% for reason in finding.rationale %}
+                <li>{{ reason }}</li>
+                {% endfor %}
+              </ul>
+
+              <div class="queue-tags">
+                {% if finding.patch_gap %}<span class="chip chip-hot">patch gap</span>{% endif %}
+                {% if finding.vulnerability.kev %}<span class="chip chip-danger">CISA KEV</span>{% endif %}
+                {% if finding.vulnerability.source_ids|length > 1 %}<span class="chip">merged {{ finding.vulnerability.source_ids|length }} feeds</span>{% endif %}
+                {% for version in finding.vulnerability.fixed_versions[:3] %}
+                <span class="chip">fix {{ version }}</span>
+                {% endfor %}
+              </div>
+
+              {% if finding.vulnerability.references %}
+              <p class="refs">
+                <a href="{{ finding.vulnerability.references[0] }}" target="_blank" rel="noreferrer">Open reference</a>
+              </p>
+              {% endif %}
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <article class="empty-state">
+          <h2>No findings in the current view</h2>
+          <p>The selected scan is clean under the active policy, or the repository has not been scanned yet.</p>
+        </article>
+        {% endif %}
+      </section>
+      {% else %}
+      <section class="empty-state first-run">
+        <p class="eyebrow">First run</p>
+        <h2>Point Glasswall at a real repository.</h2>
+        <p>It will parse resolved manifests, rank patch-gap exposure, build a remediation queue, and keep the resulting signal consistent across CLI, API, and GitHub-native surfaces.</p>
+      </section>
+      {% endif %}
+    </main>
+  </body>
+</html>

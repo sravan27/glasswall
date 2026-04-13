@@ -1,0 +1,38 @@
+name: Glasswall Remediation PR
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1-5"
+
+permissions:
+  contents: write
+  pull-requests: write
+  security-events: write
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Glasswall with remediation
+        id: glasswall
+        uses: ./
+        with:
+          path: .
+          fail-on: urgent
+          apply-remediation: true
+          max-upgrades: 3
+
+      - name: Create remediation pull request
+        if: steps.glasswall.outputs.changes-detected == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: glasswall/remediation
+          commit-message: "glasswall remediation"
+          title: "[glasswall] apply top supported remediation upgrades"
+          body-path: ${{ steps.glasswall.outputs.remediation-summary-path }}
+          labels: security, dependencies, glasswall

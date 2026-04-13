@@ -1,0 +1,9 @@
+.venv/
+.glasswall-cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+src/*.egg-info/

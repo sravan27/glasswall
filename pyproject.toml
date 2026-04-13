@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "glasswall"
+version = "0.1.0"
+description = "Patch-gap defense for zero-budget teams"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115,<1.0",
+  "httpx>=0.28,<1.0",
+  "jinja2>=3.1,<4.0",
+  "packaging>=24.2,<25.0",
+  "PyJWT[crypto]>=2.10,<3.0",
+  "PyYAML>=6.0,<7.0",
+  "python-multipart>=0.0.20,<1.0",
+  "semantic_version>=2.10,<3.0",
+  "uvicorn>=0.34,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9.0",
+]
+
+[project.scripts]
+glasswall = "glasswall.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

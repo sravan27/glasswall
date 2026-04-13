@@ -1,0 +1,15 @@
+minimum_urgency: high
+fail_on: urgent
+patch_gap_only: false
+max_findings: 50
+ignore:
+  advisories:
+    - CVE-2024-0000
+  packages:
+    - example-package
+  paths:
+    - vendor/*
+    - third_party/*
+  ecosystems:
+    - npm
+

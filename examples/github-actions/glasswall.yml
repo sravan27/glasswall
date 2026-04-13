@@ -1,0 +1,27 @@
+name: Glasswall
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  patch-gap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Glasswall
+        uses: your-org/glasswall@v1
+        with:
+          path: .
+          fail-on: high
+          policy: .glasswall.yml
+          upload-sarif: true
