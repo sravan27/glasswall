@@ -1,5 +1,9 @@
 # Glasswall
 
+[![CI](https://github.com/sravan27/glasswall/actions/workflows/ci.yml/badge.svg)](https://github.com/sravan27/glasswall/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-154c57)](https://github.com/sravan27/glasswall/blob/main/LICENSE)
+[![Patch-Gap Operations](https://img.shields.io/badge/focus-patch--gap%20operations-c66030)](https://github.com/sravan27/glasswall/blob/main/ROADMAP.md)
+
 Glasswall is a local-first defensive scanner for the patch gap: the dangerous window after a fix or advisory becomes public and before most teams actually patch.
 
 That matters more in the Project Glasswing / Claude Mythos world than another generic vulnerability list. When attackers can turn patch diffs into working exploits quickly, defenders need tooling that treats a public fix as an urgent operational event.
