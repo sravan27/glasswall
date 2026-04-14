@@ -16,6 +16,7 @@ Current work:
 - GitHub App pull request comments
 - remediation planning
 - first supported local remediation path for exact-pinned `requirements.txt`
+- fleet pressure overview and initial resolved patch-gap MTTP analytics
 
 ## Phase 2: Patch-gap compression
 

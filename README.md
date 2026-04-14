@@ -20,6 +20,7 @@ That matters more in the Project Glasswing / Claude Mythos world than another ge
 - Builds remediation plans with recommended target versions using live PyPI and npm registry metadata.
 - Applies the safest currently supported upgrades for exact-pinned `requirements.txt` files.
 - Stores scan history in SQLite, computes deltas between scans, and exposes a FastAPI dashboard plus JSON API.
+- Computes fleet pressure and resolved patch-gap MTTP from saved scan history.
 - Emits SARIF for GitHub code scanning and Markdown summaries for GitHub Actions job summaries.
 - Applies optional `.glasswall.yml` policy files so teams can suppress noise without hiding risk silently.
 
@@ -59,6 +60,7 @@ glasswall scan /path/to/repo --format summary --fail-on high
 glasswall plan /path/to/repo --format markdown
 glasswall remediate /path/to/repo --format markdown
 glasswall scan /path/to/repo --format sarif --output reports/glasswall.sarif
+glasswall fleet --format summary
 glasswall history /path/to/repo
 glasswall serve --host 127.0.0.1 --port 8080
 ```
@@ -75,6 +77,7 @@ glasswall plan /path/to/repo --format summary
 glasswall plan /path/to/repo --format json --output reports/glasswall-plan.json
 glasswall remediate /path/to/repo --format summary
 glasswall remediate /path/to/repo --apply --max-upgrades 3 --format markdown
+glasswall fleet --format markdown
 glasswall scan /path/to/repo --policy .glasswall.yml --format summary
 glasswall history /path/to/repo --limit 20
 glasswall serve
@@ -90,6 +93,8 @@ glasswall serve
 
 `glasswall remediate` is the first automation layer. Today it safely updates exact-pinned `requirements.txt` entries and produces a machine-readable record of what it changed and what it skipped. Unsupported manifests stay explicit in the output so teams know where human review or ecosystem-specific tooling is still required.
 
+`glasswall fleet` turns scan history into a pressure board. It aggregates current urgent exposure across targets and computes resolved patch-gap MTTP from findings that were resolved after entering a patch-gap window.
+
 ## API
 
 - `GET /healthz`
@@ -100,6 +105,7 @@ glasswall serve
 - `GET /api/scans/{id}/delta`
 - `GET /api/scans/{id}/plan`
 - `GET /api/plans/latest`
+- `GET /api/fleet`
 - `GET /api/github/status`
 - `POST /api/scans`
 - `POST /api/plans`

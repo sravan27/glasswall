@@ -351,12 +351,23 @@ code {
   margin-top: 1rem;
 }
 
+.fleet-band {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
 .metric-card {
   padding: 1.05rem 1.1rem;
   border-radius: var(--radius-lg);
 }
 
 .metric-card-wide {
+  grid-column: span 2;
+}
+
+.fleet-hero {
   grid-column: span 2;
 }
 
@@ -380,6 +391,50 @@ code {
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(280px, 0.8fr);
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.fleet-targets {
+  margin-top: 1rem;
+}
+
+.fleet-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.9rem;
+}
+
+.fleet-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(42, 33, 22, 0.08);
+  background: rgba(255, 252, 246, 0.76);
+}
+
+.fleet-row strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.fleet-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 0.5rem;
+}
+
+.fleet-metrics span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: var(--teal-soft);
+  color: var(--teal);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .panel {
@@ -660,7 +715,15 @@ code {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .fleet-band {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .metric-card-wide {
+    grid-column: span 3;
+  }
+
+  .fleet-hero {
     grid-column: span 3;
   }
 }
@@ -683,6 +746,7 @@ code {
 
   .field-grid,
   .metric-band,
+  .fleet-band,
   .delta-grid,
   .status-grid {
     grid-template-columns: 1fr;
@@ -692,17 +756,26 @@ code {
     grid-column: span 1;
   }
 
+  .fleet-hero {
+    grid-column: span 1;
+  }
+
   .action-row,
   .finding-header,
   .section-head,
   .status-head,
-  .queue-item-head {
+  .queue-item-head,
+  .fleet-row {
     flex-direction: column;
     align-items: start;
   }
 
   .finding-score {
     text-align: left;
+  }
+
+  .fleet-metrics {
+    justify-content: start;
   }
 }
 

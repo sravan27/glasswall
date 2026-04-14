@@ -117,6 +117,62 @@
         </article>
       </section>
 
+      <section class="fleet-band">
+        <article class="panel panel-emphasis fleet-hero">
+          <p class="panel-label">Fleet pressure</p>
+          <h2>Track patch-gap exposure across targets, not just one repo at a time.</h2>
+          <p class="panel-copy">
+            Glasswall now computes fleet pressure from scan history, including current urgent exposure, oldest
+            public-fix age, and average resolved MTTP from the data you already have.
+          </p>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Targets</span>
+          <strong>{{ fleet.target_count }}</strong>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Open findings</span>
+          <strong>{{ fleet.total_open_findings }}</strong>
+        </article>
+        <article class="metric-card metric-urgent">
+          <span class="metric-label">Urgent fleet items</span>
+          <strong>{{ fleet.total_urgent_findings }}</strong>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Patch-gap MTTP</span>
+          <strong>{{ fleet.average_resolved_mttp_days if fleet.average_resolved_mttp_days is not none else "n/a" }}</strong>
+        </article>
+      </section>
+
+      {% if fleet_targets %}
+      <section class="panel fleet-targets">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Pressure board</p>
+            <h2>Where patch-gap pressure is highest.</h2>
+          </div>
+          <span class="queue-meta">{{ fleet.hottest_target_path or "No active targets" }}</span>
+        </div>
+        <div class="fleet-list">
+          {% for target in fleet_targets %}
+          <article class="fleet-row urgency-{{ target.top_urgency_label or 'watch' }}">
+            <div>
+              <strong>{{ target.target_path }}</strong>
+              <p class="panel-copy">scan #{{ target.latest_scan_id or "n/a" }} · {{ target.latest_generated_at or "n/a" }}</p>
+            </div>
+            <div class="fleet-metrics">
+              <span>open {{ target.open_finding_count }}</span>
+              <span>urgent {{ target.urgent_open_finding_count }}</span>
+              <span>patch-gap {{ target.patch_gap_open_finding_count }}</span>
+              <span>oldest {{ target.oldest_open_public_days if target.oldest_open_public_days is not none else "n/a" }}d</span>
+              <span>mttp {{ target.average_resolved_mttp_days if target.average_resolved_mttp_days is not none else "n/a" }}</span>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
       <section class="signal-grid">
         <article class="panel panel-emphasis">
           <p class="panel-label">Delta from previous scan</p>

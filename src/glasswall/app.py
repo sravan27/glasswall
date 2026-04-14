@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from glasswall.analytics import FleetOverview, build_fleet_overview
 from glasswall.diffing import build_scan_delta
 from glasswall.github_app import GitHubWebhookVerifier
 from glasswall.github_webhooks import GitHubWebhookProcessor
@@ -58,6 +59,11 @@ def create_app(
     @app.get("/api/github/status")
     async def github_integration_status() -> JSONResponse:
         return JSONResponse({"github": github_status})
+
+    @app.get("/api/fleet")
+    async def fleet_overview() -> JSONResponse:
+        overview = _build_fleet_overview(database)
+        return JSONResponse({"fleet": overview.to_dict()})
 
     @app.get("/api/scans")
     async def list_scans(limit: int = 20, target_path: str | None = None) -> JSONResponse:
@@ -182,6 +188,7 @@ def create_app(
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request, scan_id: int | None = None) -> HTMLResponse:
         latest = database.get_scan(scan_id) if scan_id is not None else database.latest_scan()
+        fleet = _build_fleet_overview(database)
         delta = None
         plan = None
         plan_error = None
@@ -196,6 +203,7 @@ def create_app(
         return _render_index(
             request=request,
             latest=latest,
+            fleet=fleet,
             plan=plan,
             delta=delta,
             history=database.list_scans(limit=8, target_path=latest.target_path if latest else None),
@@ -217,6 +225,7 @@ def create_app(
             result = await service.scan_path(path, policy=policy)
         except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
             latest = database.latest_scan()
+            fleet = _build_fleet_overview(database)
             delta = None
             plan = None
             plan_error = None
@@ -231,6 +240,7 @@ def create_app(
             return _render_index(
                 request=request,
                 latest=latest,
+                fleet=fleet,
                 plan=plan,
                 delta=delta,
                 history=database.list_scans(limit=8, target_path=latest.target_path if latest else None),
@@ -272,6 +282,7 @@ def _stats_for(findings: tuple[Finding, ...] | list[Finding]) -> dict[str, int]:
 def _render_index(
     request: Request,
     latest: ScanResult | None,
+    fleet: FleetOverview,
     plan: RemediationPlan | None,
     delta,
     history,
@@ -287,6 +298,8 @@ def _render_index(
         name="index.html",
         context={
             "latest": latest,
+            "fleet": fleet,
+            "fleet_targets": list(fleet.targets[:5]),
             "plan": plan,
             "top_recommendation": plan.recommendations[0] if plan and plan.recommendations else None,
             "remaining_recommendations": list(plan.recommendations[1:6]) if plan else [],
@@ -309,6 +322,11 @@ async def _build_plan(service: GlasswallService, scan: ScanResult | None) -> Rem
     if scan is None:
         return None
     return await service.remediation_planner.build_plan(scan)
+
+
+def _build_fleet_overview(database: Database) -> FleetOverview:
+    histories = tuple(database.scan_history(target_path) for target_path in database.list_target_paths())
+    return build_fleet_overview(histories)
 
 
 def _github_status(settings: Settings) -> dict[str, object]:

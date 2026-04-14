@@ -8,10 +8,17 @@ from pathlib import Path
 
 import uvicorn
 
+from glasswall.analytics import build_fleet_overview
 from glasswall.diffing import build_scan_delta
 from glasswall.models import ScanOverview, urgency_rank
 from glasswall.policy import load_scan_policy
-from glasswall.render import render_plan_output, render_remediation_output, render_scan_output, write_output
+from glasswall.render import (
+    render_fleet_output,
+    render_plan_output,
+    render_remediation_output,
+    render_scan_output,
+    write_output,
+)
 from glasswall.service import GlasswallService, normalize_target_path
 from glasswall.settings import load_settings
 from glasswall.storage import Database
@@ -33,6 +40,9 @@ def build_parser() -> argparse.ArgumentParser:
     history_parser.add_argument("path", nargs="?", help="Optional repository path to filter by")
     history_parser.add_argument("--limit", type=int, default=10)
     history_parser.add_argument("--format", choices=("summary", "json"), default="summary")
+
+    fleet_parser = subparsers.add_parser("fleet", help="Show fleet pressure and MTTP from scan history")
+    fleet_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
 
     plan_parser = subparsers.add_parser("plan", help="Build a remediation plan for a repository path")
     plan_parser.add_argument("path", help="Local repository path to plan")
@@ -91,6 +101,15 @@ def run_history(path: str | None, limit: int, output_format: str) -> int:
         return 0
     for entry in entries:
         print(_render_history_entry(entry))
+    return 0
+
+
+def run_fleet(output_format: str) -> int:
+    settings = load_settings()
+    database = Database(settings.db_path)
+    histories = tuple(database.scan_history(target_path) for target_path in database.list_target_paths())
+    overview = build_fleet_overview(histories)
+    print(render_fleet_output(overview, output_format))
     return 0
 
 
@@ -161,6 +180,9 @@ def main() -> int:
 
     if args.command == "history":
         return run_history(args.path, args.limit, args.format)
+
+    if args.command == "fleet":
+        return run_fleet(args.format)
 
     if args.command == "plan":
         return asyncio.run(

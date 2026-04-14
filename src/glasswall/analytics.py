@@ -1,0 +1,165 @@
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from statistics import mean
+from typing import Any
+
+from glasswall.models import ScanResult, urgency_rank, utc_now_iso
+
+
+@dataclass(frozen=True, slots=True)
+class TargetPressure:
+    target_path: str
+    latest_scan_id: int | None
+    latest_generated_at: str | None
+    dependency_count: int
+    open_finding_count: int
+    urgent_open_finding_count: int
+    patch_gap_open_finding_count: int
+    top_urgency_label: str | None
+    oldest_open_public_days: float | None
+    average_resolved_mttp_days: float | None
+    average_resolved_detection_days: float | None
+    resolved_finding_count: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class FleetOverview:
+    generated_at: str
+    target_count: int
+    total_open_findings: int
+    total_urgent_findings: int
+    total_patch_gap_findings: int
+    average_resolved_mttp_days: float | None
+    hottest_target_path: str | None
+    targets: tuple[TargetPressure, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "generated_at": self.generated_at,
+            "target_count": self.target_count,
+            "total_open_findings": self.total_open_findings,
+            "total_urgent_findings": self.total_urgent_findings,
+            "total_patch_gap_findings": self.total_patch_gap_findings,
+            "average_resolved_mttp_days": self.average_resolved_mttp_days,
+            "hottest_target_path": self.hottest_target_path,
+            "targets": [target.to_dict() for target in self.targets],
+        }
+
+
+def build_target_pressure(history: tuple[ScanResult, ...]) -> TargetPressure:
+    if not history:
+        raise ValueError("Target history must contain at least one scan")
+
+    scans = tuple(sorted(history, key=lambda scan: scan.scan_id or 0))
+    latest = scans[-1]
+    current_findings = latest.findings
+    urgent_open_finding_count = sum(
+        1 for finding in current_findings if finding.urgency_label in {"urgent", "critical-now"}
+    )
+    patch_gap_open_finding_count = sum(1 for finding in current_findings if finding.patch_gap)
+    oldest_open_public_days = _max_or_none(
+        _days_between(_published_or_modified(finding), latest.generated_at)
+        for finding in current_findings
+    )
+
+    active: dict[str, tuple[str, str | None, bool]] = {}
+    resolved_mttp_days: list[float] = []
+    resolved_detection_days: list[float] = []
+    for scan in scans:
+        current_map = {finding.identity_key: finding for finding in scan.findings}
+        for identity_key, finding in current_map.items():
+            active.setdefault(identity_key, (scan.generated_at, _published_or_modified(finding), finding.patch_gap))
+
+        resolved_ids = [identity_key for identity_key in active if identity_key not in current_map]
+        for identity_key in resolved_ids:
+            first_seen_at, published_at, was_patch_gap = active.pop(identity_key)
+            detection_days = _days_between(first_seen_at, scan.generated_at)
+            if detection_days is not None:
+                resolved_detection_days.append(detection_days)
+            public_days = _days_between(published_at or first_seen_at, scan.generated_at)
+            if was_patch_gap and public_days is not None:
+                resolved_mttp_days.append(public_days)
+
+    return TargetPressure(
+        target_path=latest.target_path,
+        latest_scan_id=latest.scan_id,
+        latest_generated_at=latest.generated_at,
+        dependency_count=latest.dependency_count,
+        open_finding_count=latest.finding_count,
+        urgent_open_finding_count=urgent_open_finding_count,
+        patch_gap_open_finding_count=patch_gap_open_finding_count,
+        top_urgency_label=latest.top_urgency_label,
+        oldest_open_public_days=oldest_open_public_days,
+        average_resolved_mttp_days=_round_or_none(_mean_or_none(resolved_mttp_days)),
+        average_resolved_detection_days=_round_or_none(_mean_or_none(resolved_detection_days)),
+        resolved_finding_count=len(resolved_mttp_days),
+    )
+
+
+def build_fleet_overview(histories: tuple[tuple[ScanResult, ...], ...]) -> FleetOverview:
+    targets = tuple(build_target_pressure(history) for history in histories if history)
+    ranked_targets = tuple(sorted(targets, key=_target_sort_key))
+    all_resolved_mttp_days = [
+        target.average_resolved_mttp_days
+        for target in ranked_targets
+        if target.average_resolved_mttp_days is not None
+    ]
+    return FleetOverview(
+        generated_at=utc_now_iso(),
+        target_count=len(ranked_targets),
+        total_open_findings=sum(target.open_finding_count for target in ranked_targets),
+        total_urgent_findings=sum(target.urgent_open_finding_count for target in ranked_targets),
+        total_patch_gap_findings=sum(target.patch_gap_open_finding_count for target in ranked_targets),
+        average_resolved_mttp_days=_round_or_none(_mean_or_none(all_resolved_mttp_days)),
+        hottest_target_path=ranked_targets[0].target_path if ranked_targets else None,
+        targets=ranked_targets,
+    )
+
+
+def _target_sort_key(target: TargetPressure) -> tuple[int, int, int, float, str]:
+    return (
+        -urgency_rank(target.top_urgency_label),
+        -target.urgent_open_finding_count,
+        -target.patch_gap_open_finding_count,
+        -(target.oldest_open_public_days or -1.0),
+        target.target_path,
+    )
+
+
+def _published_or_modified(finding) -> str | None:
+    return finding.vulnerability.published or finding.vulnerability.modified
+
+
+def _days_between(start: str | None, end: str | None) -> float | None:
+    if start is None or end is None:
+        return None
+    try:
+        start_dt = datetime.fromisoformat(start.replace("Z", "+00:00")).astimezone(UTC)
+        end_dt = datetime.fromisoformat(end.replace("Z", "+00:00")).astimezone(UTC)
+    except ValueError:
+        return None
+    return max((end_dt - start_dt).total_seconds() / 86400.0, 0.0)
+
+
+def _mean_or_none(values: list[float]) -> float | None:
+    if not values:
+        return None
+    return float(mean(values))
+
+
+def _max_or_none(values) -> float | None:
+    filtered = [value for value in values if value is not None]
+    if not filtered:
+        return None
+    return _round_or_none(max(filtered))
+
+
+def _round_or_none(value: float | None) -> float | None:
+    if value is None:
+        return None
+    return round(value, 2)

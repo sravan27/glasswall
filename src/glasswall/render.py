@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from glasswall.analytics import FleetOverview
 from glasswall.diffing import ScanDelta
 from glasswall.models import (
     Finding,
@@ -44,6 +45,14 @@ def render_remediation_output(result: RemediationRun, output_format: str) -> str
     if output_format == "markdown":
         return render_remediation_markdown(result)
     return render_remediation_summary(result)
+
+
+def render_fleet_output(overview: FleetOverview, output_format: str) -> str:
+    if output_format == "json":
+        return json.dumps(overview.to_dict(), indent=2)
+    if output_format == "markdown":
+        return render_fleet_markdown(overview)
+    return render_fleet_summary(overview)
 
 
 def write_output(text: str, output_path: str | None) -> None:
@@ -199,6 +208,42 @@ def render_remediation_markdown(result: RemediationRun) -> str:
         lines.extend(["", "## Skipped recommendations"])
         for skip in result.skipped:
             lines.append(_remediation_skip_summary_line(skip))
+    return "\n".join(lines)
+
+
+def render_fleet_summary(overview: FleetOverview) -> str:
+    lines = [
+        f"Fleet generated: {overview.generated_at}",
+        f"Targets: {overview.target_count}",
+        f"Open findings: {overview.total_open_findings}",
+        f"Urgent findings: {overview.total_urgent_findings}",
+        f"Patch-gap findings: {overview.total_patch_gap_findings}",
+        f"Average resolved patch-gap MTTP (days): {overview.average_resolved_mttp_days if overview.average_resolved_mttp_days is not None else 'n/a'}",
+        f"Hottest target: {overview.hottest_target_path or 'n/a'}",
+    ]
+    if overview.targets:
+        lines.extend(["", "Top targets:"])
+        for target in overview.targets[:10]:
+            lines.append(_fleet_target_summary_line(target))
+    return "\n".join(lines)
+
+
+def render_fleet_markdown(overview: FleetOverview) -> str:
+    lines = [
+        "# Glasswall Fleet Overview",
+        "",
+        f"- Generated: `{overview.generated_at}`",
+        f"- Targets: `{overview.target_count}`",
+        f"- Open findings: `{overview.total_open_findings}`",
+        f"- Urgent findings: `{overview.total_urgent_findings}`",
+        f"- Patch-gap findings: `{overview.total_patch_gap_findings}`",
+        f"- Average resolved patch-gap MTTP (days): `{overview.average_resolved_mttp_days if overview.average_resolved_mttp_days is not None else 'n/a'}`",
+        f"- Hottest target: `{overview.hottest_target_path or 'n/a'}`",
+    ]
+    if overview.targets:
+        lines.extend(["", "## Target pressure"])
+        for target in overview.targets:
+            lines.append(_fleet_target_summary_line(target))
     return "\n".join(lines)
 
 
@@ -370,4 +415,14 @@ def _remediation_skip_summary_line(skip: RemediationSkip) -> str:
     return (
         f"- [{skip.urgency_label}] {skip.name}@{skip.current_version} -> {skip.target_version or 'manual'} "
         f"via {skip.source_file}: {skip.reason}"
+    )
+
+
+def _fleet_target_summary_line(target) -> str:
+    return (
+        f"- [{target.top_urgency_label or 'none'}] {target.target_path} "
+        f"open={target.open_finding_count} urgent={target.urgent_open_finding_count} "
+        f"patch-gap={target.patch_gap_open_finding_count} "
+        f"oldest-open-days={target.oldest_open_public_days if target.oldest_open_public_days is not None else 'n/a'} "
+        f"avg-resolved-mttp={target.average_resolved_mttp_days if target.average_resolved_mttp_days is not None else 'n/a'}"
     )

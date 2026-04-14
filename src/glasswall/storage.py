@@ -310,6 +310,35 @@ class Database:
             return None
         return latest.to_dict()
 
+    def list_target_paths(self) -> tuple[str, ...]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT target_path, MAX(id) AS latest_id
+                FROM scan_runs
+                GROUP BY target_path
+                ORDER BY latest_id DESC
+                """
+            ).fetchall()
+        return tuple(str(row["target_path"]) for row in rows)
+
+    def scan_history(self, target_path: str) -> tuple[ScanResult, ...]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT id
+                FROM scan_runs
+                WHERE target_path = ?
+                ORDER BY id ASC
+                """,
+                (target_path,),
+            ).fetchall()
+        return tuple(
+            scan
+            for row in rows
+            if (scan := self.get_scan(int(row["id"]))) is not None
+        )
+
     def _finding_from_row(self, row: sqlite3.Row) -> Finding:
         dependency = Dependency(
             ecosystem=row["dependency_ecosystem"],

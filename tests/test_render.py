@@ -1,5 +1,6 @@
+from glasswall.analytics import FleetOverview, TargetPressure
 from glasswall.models import Dependency, Finding, RemediationFileChange, RemediationRun, ScanResult, Vulnerability
-from glasswall.render import render_remediation_summary, render_sarif
+from glasswall.render import render_fleet_summary, render_remediation_summary, render_sarif
 
 
 def test_render_sarif_uses_canonical_vuln_id_and_relative_lockfile() -> None:
@@ -70,3 +71,36 @@ def test_render_remediation_summary_reports_counts() -> None:
 
     assert "Applied recommendations: 1" in rendered
     assert "requirements.txt packages=requests" in rendered
+
+
+def test_render_fleet_summary_reports_mttp_and_targets() -> None:
+    overview = FleetOverview(
+        generated_at="2026-04-14T00:00:00+00:00",
+        target_count=1,
+        total_open_findings=3,
+        total_urgent_findings=1,
+        total_patch_gap_findings=2,
+        average_resolved_mttp_days=6.5,
+        hottest_target_path="/repo-a",
+        targets=(
+            TargetPressure(
+                target_path="/repo-a",
+                latest_scan_id=2,
+                latest_generated_at="2026-04-14T00:00:00+00:00",
+                dependency_count=12,
+                open_finding_count=3,
+                urgent_open_finding_count=1,
+                patch_gap_open_finding_count=2,
+                top_urgency_label="urgent",
+                oldest_open_public_days=4.0,
+                average_resolved_mttp_days=6.5,
+                average_resolved_detection_days=2.0,
+                resolved_finding_count=5,
+            ),
+        ),
+    )
+
+    rendered = render_fleet_summary(overview)
+
+    assert "Average resolved patch-gap MTTP (days): 6.5" in rendered
+    assert "open=3 urgent=1 patch-gap=2" in rendered
