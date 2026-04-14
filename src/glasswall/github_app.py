@@ -89,7 +89,7 @@ class GitHubAppClient:
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {self.auth.create_jwt()}",
             "X-GitHub-Api-Version": self.settings.github_api_version,
-            "User-Agent": "glasswall/0.1.0",
+            "User-Agent": "glasswall/0.4.0",
         }
 
 
@@ -313,5 +313,5 @@ class GitHubInstallationClient:
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {self.token}",
             "X-GitHub-Api-Version": self.settings.github_api_version,
-            "User-Agent": "glasswall/0.1.0",
+            "User-Agent": "glasswall/0.4.0",
         }

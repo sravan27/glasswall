@@ -18,7 +18,7 @@ That matters more in the Project Glasswing / Claude Mythos world than another ge
 - Deduplicates overlapping GHSA/PYSEC-style records into one actionable vulnerability.
 - Scores findings for patch-gap urgency using deterministic, explainable rules.
 - Builds remediation plans with recommended target versions using live PyPI and npm registry metadata.
-- Applies the safest currently supported upgrades for exact-pinned `requirements.txt` files.
+- Applies the safest currently supported upgrades for exact-pinned `requirements.txt` and exact-pinned npm direct dependencies backed by `package-lock.json` or `npm-shrinkwrap.json`.
 - Stores scan history in SQLite, computes deltas between scans, and exposes a FastAPI dashboard plus JSON API.
 - Computes fleet pressure and resolved patch-gap MTTP from saved scan history.
 - Surfaces a change feed for newly dangerous and recently cleared findings across the fleet.
@@ -92,7 +92,7 @@ glasswall serve
 
 `glasswall plan` groups findings by dependency and chooses the lowest upgrade target that clears the visible advisory set for that dependency. For PyPI and npm packages, Glasswall also fetches live registry metadata to show the latest available version and release recency.
 
-`glasswall remediate` is the first automation layer. Today it safely updates exact-pinned `requirements.txt` entries and produces a machine-readable record of what it changed and what it skipped. Unsupported manifests stay explicit in the output so teams know where human review or ecosystem-specific tooling is still required.
+`glasswall remediate` is the first automation layer. Today it safely updates exact-pinned `requirements.txt` entries plus exact-pinned npm direct dependencies when an adjacent `package.json` is backed by `package-lock.json` or `npm-shrinkwrap.json`. Unsupported manifests and non-exact npm ranges stay explicit in the output so teams know where human review or ecosystem-specific tooling is still required.
 
 `glasswall fleet` turns scan history into a pressure board. It aggregates current urgent exposure across targets, computes resolved patch-gap MTTP from findings that were resolved after entering a patch-gap window, and highlights what just became dangerous between each target's latest two scans.
 

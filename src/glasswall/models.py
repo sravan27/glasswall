@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 URGENCY_RANKS = {
@@ -211,7 +212,12 @@ class RemediationRun:
 
     @property
     def applied_recommendation_count(self) -> int:
-        return sum(len(change.package_names) for change in self.changed_files)
+        applied = {
+            (change.ecosystem, str(Path(change.source_file).parent), package_name)
+            for change in self.changed_files
+            for package_name in change.package_names
+        }
+        return len(applied)
 
     @property
     def skipped_count(self) -> int:

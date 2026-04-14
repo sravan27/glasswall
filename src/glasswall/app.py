@@ -41,7 +41,7 @@ def create_app(
     webhook_processor: GitHubWebhookProcessor | None = None,
 ) -> FastAPI:
     settings = settings or load_settings()
-    app = FastAPI(title="Glasswall", version="0.1.0")
+    app = FastAPI(title="Glasswall", version="0.4.0")
     app.mount("/static", StaticFiles(directory=str(PACKAGE_ROOT / "static")), name="static")
 
     database = database or Database(settings.db_path)

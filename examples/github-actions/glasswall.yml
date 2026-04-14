@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run Glasswall
-        uses: sravan27/glasswall@v0.3.0
+        uses: sravan27/glasswall@v0.4.0
         with:
           path: .
           fail-on: high
