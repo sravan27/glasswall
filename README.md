@@ -1,6 +1,7 @@
 # Glasswall
 
 [![CI](https://github.com/sravan27/glasswall/actions/workflows/ci.yml/badge.svg)](https://github.com/sravan27/glasswall/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/sravan27/glasswall?display_name=tag)](https://github.com/sravan27/glasswall/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-154c57)](https://github.com/sravan27/glasswall/blob/main/LICENSE)
 [![Patch-Gap Operations](https://img.shields.io/badge/focus-patch--gap%20operations-c66030)](https://github.com/sravan27/glasswall/blob/main/ROADMAP.md)
 [![Site](https://img.shields.io/badge/site-live-8a6a16)](https://sravan27.github.io/glasswall/)
@@ -34,6 +35,15 @@ Glasswall is intentionally not an LLM wrapper. The critical problem here is prio
 - Zero-budget teams still need an opinionated queue, not a giant dump of CVEs.
 
 Glasswall is also intentionally not a clone of inventory-first scanners. Tools like OSV-Scanner and Dependabot already cover broad dependency visibility and update automation well. Glasswall’s bet is narrower: make newly dangerous public-fix windows visible fast, rank them hard, and surface them inside GitHub workflows in a way that is difficult to ignore.
+
+## Why teams reach for it
+
+| If you need... | Existing tools already help with... | Glasswall focuses on... |
+| --- | --- | --- |
+| vulnerability inventory | broad dependency visibility and CVE lookup | public-fix pressure and patch-gap ranking |
+| update automation | recurring dependency bump PRs | smallest safe remediation that clears the visible advisory set |
+| one-repo scanning | local or CI scans | fleet pressure, newly dangerous feeds, and resolved patch-gap MTTP |
+| security dashboards | counts and backlogs | pressure that gets harder to ignore in GitHub workflows |
 
 ## Supported manifests
 
