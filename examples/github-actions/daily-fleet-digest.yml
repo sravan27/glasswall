@@ -1,0 +1,58 @@
+name: Glasswall Daily Fleet Digest
+
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GLASSWALL_DB_PATH: .glasswall/state/glasswall.db
+  GLASSWALL_CACHE_DIR: .glasswall/state/cache
+
+jobs:
+  fleet-digest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Restore Glasswall state
+        uses: actions/cache@v5
+        with:
+          path: .glasswall/state
+          key: glasswall-state-${{ runner.os }}-${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '**/pnpm-lock.yaml', '**/requirements.txt', '**/poetry.lock', '**/uv.lock', '**/Pipfile.lock', '**/Cargo.lock', '**/go.sum', '**/Gemfile.lock', '**/composer.lock', '.glasswall.yml', '.glasswall.yaml') }}
+          restore-keys: |
+            glasswall-state-${{ runner.os }}-
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Glasswall
+        run: python -m pip install --upgrade pip && python -m pip install .
+
+      - name: Ensure state directories
+        run: mkdir -p "$(dirname "$GLASSWALL_DB_PATH")" "$GLASSWALL_CACHE_DIR"
+
+      - name: Scan repository
+        run: |
+          if [[ -f .glasswall.yml ]]; then
+            glasswall scan . --policy .glasswall.yml --format summary
+          elif [[ -f .glasswall.yaml ]]; then
+            glasswall scan . --policy .glasswall.yaml --format summary
+          else
+            glasswall scan . --format summary
+          fi
+
+      - name: Publish fleet digest
+        run: |
+          {
+            echo "## Daily fleet digest"
+            echo
+            glasswall fleet --format markdown
+          } >> "$GITHUB_STEP_SUMMARY"

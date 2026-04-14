@@ -21,6 +21,7 @@ That matters more in the Project Glasswing / Claude Mythos world than another ge
 - Applies the safest currently supported upgrades for exact-pinned `requirements.txt` files.
 - Stores scan history in SQLite, computes deltas between scans, and exposes a FastAPI dashboard plus JSON API.
 - Computes fleet pressure and resolved patch-gap MTTP from saved scan history.
+- Surfaces a change feed for newly dangerous and recently cleared findings across the fleet.
 - Emits SARIF for GitHub code scanning and Markdown summaries for GitHub Actions job summaries.
 - Applies optional `.glasswall.yml` policy files so teams can suppress noise without hiding risk silently.
 
@@ -93,7 +94,7 @@ glasswall serve
 
 `glasswall remediate` is the first automation layer. Today it safely updates exact-pinned `requirements.txt` entries and produces a machine-readable record of what it changed and what it skipped. Unsupported manifests stay explicit in the output so teams know where human review or ecosystem-specific tooling is still required.
 
-`glasswall fleet` turns scan history into a pressure board. It aggregates current urgent exposure across targets and computes resolved patch-gap MTTP from findings that were resolved after entering a patch-gap window.
+`glasswall fleet` turns scan history into a pressure board. It aggregates current urgent exposure across targets, computes resolved patch-gap MTTP from findings that were resolved after entering a patch-gap window, and highlights what just became dangerous between each target's latest two scans.
 
 ## API
 
@@ -151,6 +152,8 @@ Glasswall ships as a reusable composite GitHub Action in [action.yml](/Users/sra
 Example workflow: [examples/github-actions/glasswall.yml](/Users/sravansridhar/Documents/Codex/glasswall/examples/github-actions/glasswall.yml)
 
 Remediation PR workflow example: [examples/github-actions/remediation-pr.yml](/Users/sravansridhar/Documents/Codex/glasswall/examples/github-actions/remediation-pr.yml)
+
+Daily fleet digest example: [examples/github-actions/daily-fleet-digest.yml](/Users/sravansridhar/Documents/Codex/glasswall/examples/github-actions/daily-fleet-digest.yml)
 
 ## GitHub App Mode
 

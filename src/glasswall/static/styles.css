@@ -353,7 +353,7 @@ code {
 
 .fleet-band {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.9rem;
   margin-top: 1rem;
 }
@@ -394,6 +394,10 @@ code {
 }
 
 .fleet-targets {
+  margin-top: 1rem;
+}
+
+.fleet-signals {
   margin-top: 1rem;
 }
 

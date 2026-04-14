@@ -17,6 +17,7 @@ Current work:
 - remediation planning
 - first supported local remediation path for exact-pinned `requirements.txt`
 - fleet pressure overview and initial resolved patch-gap MTTP analytics
+- newly dangerous fleet change feed across latest scans
 
 ## Phase 2: Patch-gap compression
 

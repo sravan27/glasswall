@@ -1,4 +1,4 @@
-from glasswall.analytics import FleetOverview, TargetPressure
+from glasswall.analytics import FleetOverview, FleetSignal, TargetPressure
 from glasswall.models import Dependency, Finding, RemediationFileChange, RemediationRun, ScanResult, Vulnerability
 from glasswall.render import render_fleet_summary, render_remediation_summary, render_sarif
 
@@ -98,9 +98,29 @@ def test_render_fleet_summary_reports_mttp_and_targets() -> None:
                 resolved_finding_count=5,
             ),
         ),
+        newly_dangerous_count=1,
+        recently_resolved_count=0,
+        signals=(
+            FleetSignal(
+                kind="new",
+                target_path="/repo-a",
+                scan_id=2,
+                generated_at="2026-04-14T00:00:00+00:00",
+                dependency_name="requests",
+                current_version="2.19.0",
+                source_file="requirements.txt",
+                vulnerability_id="CVE-2026-1234",
+                urgency_label="urgent",
+                urgency_score=82,
+                patch_gap=True,
+                days_since_public=4.0,
+            ),
+        ),
     )
 
     rendered = render_fleet_summary(overview)
 
+    assert "Newly dangerous findings: 1" in rendered
     assert "Average resolved patch-gap MTTP (days): 6.5" in rendered
     assert "open=3 urgent=1 patch-gap=2" in rendered
+    assert "[Newly dangerous] /repo-a requests@2.19.0 CVE-2026-1234" in rendered

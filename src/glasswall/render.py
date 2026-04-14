@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from glasswall.analytics import FleetOverview
+from glasswall.analytics import FleetOverview, FleetSignal
 from glasswall.diffing import ScanDelta
 from glasswall.models import (
     Finding,
@@ -218,9 +218,15 @@ def render_fleet_summary(overview: FleetOverview) -> str:
         f"Open findings: {overview.total_open_findings}",
         f"Urgent findings: {overview.total_urgent_findings}",
         f"Patch-gap findings: {overview.total_patch_gap_findings}",
+        f"Newly dangerous findings: {overview.newly_dangerous_count}",
+        f"Recently cleared findings: {overview.recently_resolved_count}",
         f"Average resolved patch-gap MTTP (days): {overview.average_resolved_mttp_days if overview.average_resolved_mttp_days is not None else 'n/a'}",
         f"Hottest target: {overview.hottest_target_path or 'n/a'}",
     ]
+    if overview.signals:
+        lines.extend(["", "Recent change feed:"])
+        for signal in overview.signals[:10]:
+            lines.append(_fleet_signal_summary_line(signal))
     if overview.targets:
         lines.extend(["", "Top targets:"])
         for target in overview.targets[:10]:
@@ -237,9 +243,15 @@ def render_fleet_markdown(overview: FleetOverview) -> str:
         f"- Open findings: `{overview.total_open_findings}`",
         f"- Urgent findings: `{overview.total_urgent_findings}`",
         f"- Patch-gap findings: `{overview.total_patch_gap_findings}`",
+        f"- Newly dangerous findings: `{overview.newly_dangerous_count}`",
+        f"- Recently cleared findings: `{overview.recently_resolved_count}`",
         f"- Average resolved patch-gap MTTP (days): `{overview.average_resolved_mttp_days if overview.average_resolved_mttp_days is not None else 'n/a'}`",
         f"- Hottest target: `{overview.hottest_target_path or 'n/a'}`",
     ]
+    if overview.signals:
+        lines.extend(["", "## Recent change feed"])
+        for signal in overview.signals[:10]:
+            lines.append(_fleet_signal_summary_line(signal))
     if overview.targets:
         lines.extend(["", "## Target pressure"])
         for target in overview.targets:
@@ -425,4 +437,13 @@ def _fleet_target_summary_line(target) -> str:
         f"patch-gap={target.patch_gap_open_finding_count} "
         f"oldest-open-days={target.oldest_open_public_days if target.oldest_open_public_days is not None else 'n/a'} "
         f"avg-resolved-mttp={target.average_resolved_mttp_days if target.average_resolved_mttp_days is not None else 'n/a'}"
+    )
+
+
+def _fleet_signal_summary_line(signal: FleetSignal) -> str:
+    return (
+        f"- [{signal.kind_label}] {signal.target_path} {signal.dependency_name}@{signal.current_version} "
+        f"{signal.vulnerability_id} urgency={signal.urgency_label} "
+        f"patch-gap={'yes' if signal.patch_gap else 'no'} "
+        f"public-days={signal.days_since_public if signal.days_since_public is not None else 'n/a'}"
     )

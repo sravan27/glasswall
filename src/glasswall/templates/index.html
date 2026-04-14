@@ -139,10 +139,44 @@
           <strong>{{ fleet.total_urgent_findings }}</strong>
         </article>
         <article class="metric-card">
+          <span class="metric-label">Newly dangerous</span>
+          <strong>{{ fleet.newly_dangerous_count }}</strong>
+        </article>
+        <article class="metric-card">
           <span class="metric-label">Patch-gap MTTP</span>
           <strong>{{ fleet.average_resolved_mttp_days if fleet.average_resolved_mttp_days is not none else "n/a" }}</strong>
         </article>
       </section>
+
+      {% if fleet_signals %}
+      <section class="panel fleet-signals">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Change feed</p>
+            <h2>What just became dangerous.</h2>
+          </div>
+          <span class="queue-meta">{{ fleet.newly_dangerous_count }} new or escalated · {{ fleet.recently_resolved_count }} cleared</span>
+        </div>
+        <div class="fleet-list">
+          {% for signal in fleet_signals %}
+          <article class="fleet-row urgency-{{ signal.urgency_label or 'watch' }}">
+            <div>
+              <p class="panel-label">{{ signal.kind_label }}</p>
+              <strong>{{ signal.dependency_name }} · {{ signal.vulnerability_id }}</strong>
+              <p class="panel-copy">{{ signal.target_path }} · {{ signal.source_file }} · scan #{{ signal.scan_id or "n/a" }}</p>
+            </div>
+            <div class="fleet-metrics">
+              <span>{{ signal.urgency_label }}</span>
+              {% if signal.patch_gap %}
+              <span>patch-gap</span>
+              {% endif %}
+              <span>{{ signal.days_since_public if signal.days_since_public is not none else "n/a" }}d public</span>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
 
       {% if fleet_targets %}
       <section class="panel fleet-targets">

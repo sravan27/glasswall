@@ -91,6 +91,44 @@ def test_build_fleet_overview_ranks_hottest_target_and_totals() -> None:
     assert overview.targets[0].target_path == "/repo-a"
 
 
+def test_build_fleet_overview_emits_change_feed_signals() -> None:
+    dependency = Dependency("PyPI", "requests", "2.19.0", "requirements.txt")
+    history = (
+        ScanResult(
+            scan_id=1,
+            target_path="/repo-a",
+            generated_at="2026-04-10T00:00:00+00:00",
+            dependencies=(dependency,),
+            findings=(),
+            policy_path=None,
+        ),
+        ScanResult(
+            scan_id=2,
+            target_path="/repo-a",
+            generated_at="2026-04-14T00:00:00+00:00",
+            dependencies=(dependency,),
+            findings=(
+                Finding(
+                    dependency=dependency,
+                    vulnerability=_vulnerability("CVE-2026-0004", published="2026-04-01T00:00:00+00:00"),
+                    urgency_score=82,
+                    urgency_label="urgent",
+                    patch_gap=True,
+                    rationale=("urgent",),
+                ),
+            ),
+            policy_path=None,
+        ),
+    )
+
+    overview = build_fleet_overview((history,))
+
+    assert overview.newly_dangerous_count == 1
+    assert overview.recently_resolved_count == 0
+    assert overview.signals[0].kind == "new"
+    assert overview.signals[0].kind_label == "Newly dangerous"
+
+
 def _vulnerability(alias: str, published: str) -> Vulnerability:
     return Vulnerability(
         osv_id=f"GHSA-{alias.lower()}",

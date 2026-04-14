@@ -213,4 +213,5 @@ def test_fleet_api_returns_aggregated_pressure_metrics(tmp_path) -> None:
     payload = response.json()["fleet"]
     assert payload["target_count"] == 1
     assert payload["total_urgent_findings"] == 1
+    assert payload["newly_dangerous_count"] == 0
     assert payload["targets"][0]["target_path"] == "/repo-a"

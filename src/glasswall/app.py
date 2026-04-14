@@ -300,6 +300,7 @@ def _render_index(
             "latest": latest,
             "fleet": fleet,
             "fleet_targets": list(fleet.targets[:5]),
+            "fleet_signals": list(fleet.signals[:8]),
             "plan": plan,
             "top_recommendation": plan.recommendations[0] if plan and plan.recommendations else None,
             "remaining_recommendations": list(plan.recommendations[1:6]) if plan else [],

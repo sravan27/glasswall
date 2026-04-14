@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run Glasswall
-        uses: your-org/glasswall@v1
+        uses: sravan27/glasswall@v0.3.0
         with:
           path: .
           fail-on: high
