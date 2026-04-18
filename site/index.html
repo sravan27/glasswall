@@ -6,96 +6,149 @@
     <title>Glasswall</title>
     <meta
       name="description"
-      content="Glasswall is patch-gap operations for public fixes: scan, prioritize, remediate, and pressure teams to patch."
+      content="Glasswall is patch-gap operations for public fixes: rank urgency, plan the smallest safe upgrade, and create GitHub-native pressure to patch."
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="page">
       <section class="hero">
-        <p class="eyebrow">Glasswall / Patch-Gap Operations</p>
-        <h1>Public fixes should create action before attackers create pressure.</h1>
-        <p class="lede">
-          Glasswall is a GitHub-native patch-gap operations tool. It ranks public-fix exposure, plans the
-          smallest safe upgrades, and can open remediation pull requests before backlog culture turns a known
-          problem into an exploited one.
-        </p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="https://github.com/sravan27/glasswall">Open repo</a>
-          <a class="button" href="https://github.com/sravan27/glasswall/releases/latest">Read release</a>
-          <a class="button" href="https://github.com/sravan27/glasswall/issues">Roadmap issues</a>
+        <div class="hero-copy">
+          <p class="eyebrow">Glasswall / Patch-Gap Operations</p>
+          <h1>Make public fixes impossible to ignore.</h1>
+          <p class="lede">
+            Glasswall treats the patch gap like an operational incident. It ranks public-fix exposure, proposes the
+            smallest safe upgrades, and pushes the problem into GitHub where teams already decide what ships.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="https://github.com/sravan27/glasswall">Open repo</a>
+            <a class="button" href="https://github.com/sravan27/glasswall/releases/latest">Latest release</a>
+            <a class="button" href="https://github.com/sravan27/glasswall/issues">Roadmap issues</a>
+          </div>
         </div>
+        <aside class="hero-proof">
+          <p class="card-label">Live showcase snapshot</p>
+          <strong id="snapshot-title">Loading demo proof...</strong>
+          <p id="snapshot-updated" class="proof-note">Pulling the latest showcase bundle from this repo.</p>
+          <div class="proof-grid" id="proof-grid">
+            <article class="proof-card">
+              <span>Targets</span>
+              <strong>--</strong>
+            </article>
+            <article class="proof-card">
+              <span>Open findings</span>
+              <strong>--</strong>
+            </article>
+            <article class="proof-card">
+              <span>Urgent findings</span>
+              <strong>--</strong>
+            </article>
+            <article class="proof-card">
+              <span>Patch-gap</span>
+              <strong>--</strong>
+            </article>
+          </div>
+        </aside>
       </section>
 
-      <section class="band">
+      <section class="proof-band">
         <article class="card span-two">
-          <p class="card-label">What it solves</p>
-          <h2>The gap after a fix lands and before most teams patch.</h2>
+          <p class="card-label">The wedge</p>
+          <h2>Inventory tells you what exists. Patch-gap operations tells you what can burn you next.</h2>
           <p>
-            Most tooling is built for inventory, compliance, or broad CVE visibility. Glasswall is built for the
-            narrower and uglier problem that matters when exploit development gets faster: a public fix landed,
-            and you need to know what is newly dangerous right now, then actually ship the smallest safe fix.
+            Most tools optimize for compliance, breadth, or recurring update automation. Glasswall is built for the
+            narrower moment that matters when exploit development gets faster: a fix is public, the patch diff is
+            visible, and you need a queue that creates action now.
           </p>
         </article>
         <article class="card metric">
           <span>Signal</span>
-          <strong>Patch-gap urgency</strong>
+          <strong>Newly dangerous</strong>
         </article>
         <article class="card metric">
           <span>Action</span>
-          <strong>Remediation PRs</strong>
+          <strong>Smallest safe fix</strong>
+        </article>
+        <article class="card metric">
+          <span>Pressure</span>
+          <strong>GitHub-native</strong>
         </article>
         <article class="card metric">
           <span>Scoreboard</span>
           <strong>Patch-gap MTTP</strong>
         </article>
-        <article class="card metric">
-          <span>Feed</span>
-          <strong>Newly Dangerous</strong>
-        </article>
+      </section>
+
+      <section class="live-proof">
+        <div class="section-head">
+          <p class="eyebrow">Live Proof</p>
+          <h2>The repo now ships its own proof bundle.</h2>
+          <p class="section-copy">
+            The cards below are rendered from `glasswall showcase` output committed in this repository. That keeps the
+            product honest: the public demo is generated by the same code path teams can run in CI or publish to Pages.
+          </p>
+        </div>
+        <div class="live-layout">
+          <article class="panel board">
+            <div class="panel-head">
+              <p class="card-label">Target pressure</p>
+              <strong>Demo targets</strong>
+            </div>
+            <div id="target-list" class="target-list">
+              <p class="empty-state">Target snapshots will appear here after the showcase bundle loads.</p>
+            </div>
+          </article>
+          <article class="panel board dark">
+            <div class="panel-head">
+              <p class="card-label">Remediation queue</p>
+              <strong>Top supported upgrades</strong>
+            </div>
+            <div id="queue-list" class="queue-list">
+              <p class="empty-state">Remediation recommendations will appear here after the showcase bundle loads.</p>
+            </div>
+          </article>
+        </div>
       </section>
 
       <section class="workflow">
         <div class="section-head">
-          <p class="eyebrow">Workflow</p>
-          <h2>One queue across CLI, API, Actions, and GitHub App mode.</h2>
+          <p class="eyebrow">Adoption</p>
+          <h2>Start where teams already live.</h2>
         </div>
         <div class="steps">
           <article class="step">
-            <strong>1. Scan</strong>
-            <p>Parse resolved manifests, enrich OSV and CISA KEV data, and rank urgency with explicit rationale.</p>
+            <strong>1. CLI</strong>
+            <p>Scan a repo locally, build the remediation plan, and prove the queue before changing any workflow.</p>
           </article>
           <article class="step">
-            <strong>2. Plan</strong>
-            <p>Choose the lowest version that clears the visible advisory set and keep unsupported paths explicit.</p>
+            <strong>2. Actions</strong>
+            <p>Emit SARIF, fail on urgency, and add remediation summaries to GitHub job pages that engineers already read.</p>
           </article>
           <article class="step">
-            <strong>3. Remediate</strong>
-            <p>Apply safe supported upgrades for Python and exact-pinned npm repos locally or in CI, then surface the change as a GitHub-native workflow.</p>
+            <strong>3. GitHub App mode</strong>
+            <p>Comment on pull requests, scan fork-safe heads, and open remediation branches from default-branch push events.</p>
           </article>
           <article class="step">
-            <strong>4. Pressure</strong>
-            <p>Use PR comments, remediation branches, MTTP analytics, and a newly dangerous feed so public-fix risk becomes hard to ignore.</p>
+            <strong>4. Pressure board</strong>
+            <p>Turn saved history into fleet pressure, newly dangerous signals, and patch-gap MTTP instead of another backlog counter.</p>
           </article>
         </div>
       </section>
 
-      <section class="showcase">
-        <article class="panel">
-          <p class="card-label">Why GitHub-native matters</p>
-          <ul>
-            <li>PR comments keep patch-gap visibility where code review already happens.</li>
-            <li>GitHub Actions can fail on urgency thresholds and emit SARIF plus remediation summaries.</li>
-            <li>Webhook-driven remediation PRs turn a ranked finding into a branch and pull request.</li>
-          </ul>
+      <section class="launch-grid">
+        <article class="panel launch">
+          <p class="card-label">Run the demo yourself</p>
+          <pre><code>glasswall showcase \
+  examples/showcase/python-legacy \
+  examples/showcase/npm-legacy \
+  --format markdown</code></pre>
         </article>
-        <article class="panel dark">
-          <p class="card-label">Category thesis</p>
+        <article class="panel launch dark">
+          <p class="card-label">Why this feels different</p>
           <blockquote>
-            Vulnerability scanners count problems. Patch-gap operations compress time between public fix and real
-            patching.
+            Vulnerability tooling usually counts problems. Glasswall is trying to compress the time between public fix
+            and real patching.
           </blockquote>
-          <p>The metric to own is resolved patch-gap MTTP. Everything in Glasswall now points toward that.</p>
         </article>
       </section>
 
@@ -104,7 +157,88 @@
         <a href="https://github.com/sravan27/glasswall/issues/8">MTTP issue</a>
         <a href="https://github.com/sravan27/glasswall/issues/9">Node remediation issue</a>
         <a href="https://github.com/sravan27/glasswall/issues/10">Silent fix radar issue</a>
+        <a href="https://github.com/sravan27/glasswall/discussions">Discussions</a>
       </section>
     </main>
+
+    <script>
+      const numberFormat = new Intl.NumberFormat("en-US");
+
+      function metricCard(label, value) {
+        return `<article class="proof-card"><span>${label}</span><strong>${value}</strong></article>`;
+      }
+
+      function findingMarkup(finding) {
+        const dependency = finding.dependency;
+        const vulnerability = finding.vulnerability;
+        return `
+          <li class="finding-item">
+            <strong>${dependency.name}@${dependency.version}</strong>
+            <span>${vulnerability.canonical_id} · ${finding.urgency_label}${finding.patch_gap ? " · patch-gap" : ""}</span>
+          </li>
+        `;
+      }
+
+      function recommendationMarkup(recommendation, label) {
+        return `
+          <article class="queue-item">
+            <p class="queue-label">${label}</p>
+            <strong>${recommendation.name} ${recommendation.current_version} → ${recommendation.target_version || "manual"}</strong>
+            <span>${recommendation.source_file} · ${recommendation.urgency_label}</span>
+          </article>
+        `;
+      }
+
+      async function loadShowcase() {
+        try {
+          const response = await fetch("./demo.json", { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          const payload = await response.json();
+          const { fleet, targets, title, generated_at: generatedAt } = payload;
+          document.getElementById("snapshot-title").textContent = title;
+          document.getElementById("snapshot-updated").textContent = `Last generated ${new Date(generatedAt).toLocaleString()}.`;
+
+          document.getElementById("proof-grid").innerHTML = [
+            metricCard("Targets", numberFormat.format(fleet.target_count)),
+            metricCard("Open findings", numberFormat.format(fleet.total_open_findings)),
+            metricCard("Urgent findings", numberFormat.format(fleet.total_urgent_findings)),
+            metricCard("Patch-gap", numberFormat.format(fleet.total_patch_gap_findings)),
+          ].join("");
+
+          document.getElementById("target-list").innerHTML = targets
+            .map((target) => {
+              const findings = target.scan.findings.slice(0, 3).map(findingMarkup).join("");
+              return `
+                <article class="target-card">
+                  <div class="target-head">
+                    <div>
+                      <p class="target-label">${target.label}</p>
+                      <strong>${target.scan.top_urgency_label || "clean"}</strong>
+                    </div>
+                    <div class="target-metrics">
+                      <span>${target.scan.finding_count} findings</span>
+                      <span>${target.plan.recommendation_count} recommendations</span>
+                    </div>
+                  </div>
+                  <p class="target-path">${target.target_path}</p>
+                  <ul class="finding-list">${findings || '<li class="finding-item empty">No findings in this snapshot.</li>'}</ul>
+                </article>
+              `;
+            })
+            .join("");
+
+          document.getElementById("queue-list").innerHTML = targets
+            .flatMap((target) => target.plan.recommendations.slice(0, 2).map((recommendation) => recommendationMarkup(recommendation, target.label)))
+            .join("") || '<p class="empty-state">No remediation recommendations in this snapshot.</p>';
+        } catch (error) {
+          document.getElementById("snapshot-title").textContent = "Showcase bundle unavailable";
+          document.getElementById("snapshot-updated").textContent = "Commit a generated site/demo.json bundle to render live proof here.";
+        }
+      }
+
+      loadShowcase();
+    </script>
   </body>
 </html>

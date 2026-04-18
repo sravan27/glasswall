@@ -16,6 +16,7 @@ from glasswall.models import (
     RemediationSkip,
     ScanResult,
 )
+from glasswall.showcase import ShowcaseBundle
 
 
 def render_scan_output(result: ScanResult, output_format: str, delta: ScanDelta | None = None) -> str:
@@ -53,6 +54,14 @@ def render_fleet_output(overview: FleetOverview, output_format: str) -> str:
     if output_format == "markdown":
         return render_fleet_markdown(overview)
     return render_fleet_summary(overview)
+
+
+def render_showcase_output(bundle: ShowcaseBundle, output_format: str) -> str:
+    if output_format == "json":
+        return json.dumps(bundle.to_dict(), indent=2)
+    if output_format == "markdown":
+        return render_showcase_markdown(bundle)
+    return render_showcase_summary(bundle)
 
 
 def write_output(text: str, output_path: str | None) -> None:
@@ -256,6 +265,64 @@ def render_fleet_markdown(overview: FleetOverview) -> str:
         lines.extend(["", "## Target pressure"])
         for target in overview.targets:
             lines.append(_fleet_target_summary_line(target))
+    return "\n".join(lines)
+
+
+def render_showcase_summary(bundle: ShowcaseBundle) -> str:
+    lines = [
+        f"Showcase: {bundle.title}",
+        f"Generated: {bundle.generated_at}",
+        f"Targets: {bundle.fleet.target_count}",
+        f"Open findings: {bundle.fleet.total_open_findings}",
+        f"Urgent findings: {bundle.fleet.total_urgent_findings}",
+        f"Patch-gap findings: {bundle.fleet.total_patch_gap_findings}",
+        f"Average resolved patch-gap MTTP (days): {bundle.fleet.average_resolved_mttp_days if bundle.fleet.average_resolved_mttp_days is not None else 'n/a'}",
+    ]
+    if bundle.targets:
+        lines.extend(["", "Target snapshots:"])
+        for target in bundle.targets:
+            lines.append(
+                f"{target.label}: findings={target.scan.finding_count} urgent={target.urgent_finding_count} "
+                f"patch-gap={target.patch_gap_finding_count} recommendations={target.plan.recommendation_count}"
+            )
+    return "\n".join(lines)
+
+
+def render_showcase_markdown(bundle: ShowcaseBundle) -> str:
+    lines = [
+        "# Glasswall Showcase",
+        "",
+        f"- Title: `{bundle.title}`",
+        f"- Generated: `{bundle.generated_at}`",
+        f"- Targets: `{bundle.fleet.target_count}`",
+        f"- Open findings: `{bundle.fleet.total_open_findings}`",
+        f"- Urgent findings: `{bundle.fleet.total_urgent_findings}`",
+        f"- Patch-gap findings: `{bundle.fleet.total_patch_gap_findings}`",
+        f"- Average resolved patch-gap MTTP (days): `{bundle.fleet.average_resolved_mttp_days if bundle.fleet.average_resolved_mttp_days is not None else 'n/a'}`",
+    ]
+    for target in bundle.targets:
+        lines.extend(
+            [
+                "",
+                f"## {target.label}",
+                f"- Target: `{target.target_path}`",
+                f"- Findings: `{target.scan.finding_count}`",
+                f"- Urgent findings: `{target.urgent_finding_count}`",
+                f"- Patch-gap findings: `{target.patch_gap_finding_count}`",
+                f"- Recommendations: `{target.plan.recommendation_count}`",
+                f"- Dry-run changed files: `{target.remediation_preview.changed_file_count}`",
+            ]
+        )
+        if target.scan.findings:
+            lines.append("")
+            lines.append("### Top findings")
+            for finding in target.scan.findings[:5]:
+                lines.append(_summary_line(finding))
+        if target.plan.recommendations:
+            lines.append("")
+            lines.append("### Top remediation queue")
+            for recommendation in target.plan.recommendations[:5]:
+                lines.append(_plan_summary_line(recommendation))
     return "\n".join(lines)
 
 

@@ -17,9 +17,11 @@ from glasswall.render import (
     render_plan_output,
     render_remediation_output,
     render_scan_output,
+    render_showcase_output,
     write_output,
 )
 from glasswall.service import GlasswallService, normalize_target_path
+from glasswall.showcase import build_showcase
 from glasswall.settings import load_settings
 from glasswall.storage import Database
 
@@ -57,6 +59,13 @@ def build_parser() -> argparse.ArgumentParser:
     remediate_parser.add_argument("--output", help="Optional file path for rendered output")
     remediate_parser.add_argument("--apply", action="store_true", help="Write supported remediation changes to disk")
     remediate_parser.add_argument("--max-upgrades", type=int, help="Limit the number of top recommendations considered")
+
+    showcase_parser = subparsers.add_parser("showcase", help="Build a static showcase bundle for demos and Pages")
+    showcase_parser.add_argument("paths", nargs="+", help="Repository paths to include in the showcase")
+    showcase_parser.add_argument("--title", default="Glasswall Showcase")
+    showcase_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
+    showcase_parser.add_argument("--output", help="Optional file path for rendered output")
+    showcase_parser.add_argument("--max-upgrades", type=int, help="Limit dry-run remediation preview to the top recommendations")
 
     serve_parser = subparsers.add_parser("serve", help="Run the Glasswall web UI")
     serve_parser.add_argument("--host", default="127.0.0.1")
@@ -145,6 +154,25 @@ async def run_remediate(
     return 0
 
 
+async def run_showcase(
+    target_paths: list[str],
+    title: str,
+    output_format: str,
+    output_path: str | None,
+    max_upgrades: int | None,
+) -> int:
+    settings = load_settings()
+    service = GlasswallService(settings=settings)
+    bundle = await build_showcase(
+        target_paths,
+        title=title,
+        service=service,
+        max_recommendations=max_upgrades,
+    )
+    write_output(render_showcase_output(bundle, output_format), output_path)
+    return 0
+
+
 def exit_code_for_threshold(result, fail_on: str | None) -> int:
     if fail_on is None:
         return 0
@@ -208,6 +236,17 @@ def main() -> int:
                 output_path=args.output,
                 policy_path=args.policy,
                 apply=args.apply,
+                max_upgrades=args.max_upgrades,
+            )
+        )
+
+    if args.command == "showcase":
+        return asyncio.run(
+            run_showcase(
+                target_paths=args.paths,
+                title=args.title,
+                output_format=args.format,
+                output_path=args.output,
                 max_upgrades=args.max_upgrades,
             )
         )
