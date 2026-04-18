@@ -22,6 +22,7 @@ That matters more in the Project Glasswing / Claude Mythos world than another ge
 - Applies the safest currently supported upgrades for exact-pinned `requirements.txt` and exact-pinned npm direct dependencies backed by `package-lock.json` or `npm-shrinkwrap.json`.
 - Stores scan history in SQLite, computes deltas between scans, and exposes a FastAPI dashboard plus JSON API.
 - Computes fleet pressure and resolved patch-gap MTTP from saved scan history.
+- Grades fleet posture with a deterministic scorecard that weighs live urgency, patch-gap backlog, public exposure age, recent drift, and resolved MTTP.
 - Surfaces a change feed for newly dangerous and recently cleared findings across the fleet.
 - Exports public proof bundles with `glasswall showcase` so GitHub Pages and demo repos can render live product output instead of hand-written marketing copy.
 - Emits SARIF for GitHub code scanning and Markdown summaries for GitHub Actions job summaries.
@@ -74,6 +75,7 @@ glasswall remediate /path/to/repo --format markdown
 glasswall scan /path/to/repo --format sarif --output reports/glasswall.sarif
 glasswall showcase examples/showcase/python-legacy examples/showcase/npm-legacy --format markdown
 glasswall fleet --format summary
+glasswall scorecard --format markdown
 glasswall history /path/to/repo
 glasswall serve --host 127.0.0.1 --port 8080
 ```
@@ -92,6 +94,7 @@ glasswall remediate /path/to/repo --format summary
 glasswall remediate /path/to/repo --apply --max-upgrades 3 --format markdown
 glasswall showcase examples/showcase/python-legacy examples/showcase/npm-legacy --format json --output site/demo.json
 glasswall fleet --format markdown
+glasswall scorecard --format json
 glasswall scan /path/to/repo --policy .glasswall.yml --format summary
 glasswall history /path/to/repo --limit 20
 glasswall serve
@@ -110,6 +113,8 @@ glasswall serve
 `glasswall showcase` turns one or more repositories into a compact proof bundle for GitHub Pages, docs, or launch material. The bundle includes per-target scan results, remediation plans, dry-run remediation previews, and a fleet-style summary that can be rendered as JSON or Markdown.
 
 `glasswall fleet` turns scan history into a pressure board. It aggregates current urgent exposure across targets, computes resolved patch-gap MTTP from findings that were resolved after entering a patch-gap window, and highlights what just became dangerous between each target's latest two scans.
+
+`glasswall scorecard` sits one layer above `fleet`. It turns those same histories into grades and trend labels so teams can tell whether they are hardening, holding, or backsliding without reading every raw metric first.
 
 ## Live showcase
 
@@ -136,6 +141,7 @@ Those demo targets are intentionally small and exact-pinned so the site shows th
 - `GET /api/scans/{id}/plan`
 - `GET /api/plans/latest`
 - `GET /api/fleet`
+- `GET /api/scorecard`
 - `GET /api/github/status`
 - `POST /api/scans`
 - `POST /api/plans`

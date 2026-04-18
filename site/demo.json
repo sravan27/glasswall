@@ -1,8 +1,8 @@
 {
   "title": "Glasswall Showcase",
-  "generated_at": "2026-04-18T19:46:16+00:00",
+  "generated_at": "2026-04-18T20:02:36+00:00",
   "fleet": {
-    "generated_at": "2026-04-18T19:46:16+00:00",
+    "generated_at": "2026-04-18T20:02:36+00:00",
     "target_count": 2,
     "total_open_findings": 20,
     "total_urgent_findings": 0,
@@ -13,35 +13,98 @@
       {
         "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/npm-legacy",
         "latest_scan_id": null,
-        "latest_generated_at": "2026-04-18T19:46:15+00:00",
+        "latest_generated_at": "2026-04-18T20:02:36+00:00",
         "dependency_count": 1,
         "open_finding_count": 5,
         "urgent_open_finding_count": 0,
         "patch_gap_open_finding_count": 2,
         "top_urgency_label": "high",
-        "oldest_open_public_days": 1808.15,
+        "oldest_open_public_days": 1808.16,
         "average_resolved_mttp_days": null,
         "average_resolved_detection_days": null,
-        "resolved_finding_count": 0
+        "resolved_finding_count": 0,
+        "newly_dangerous_count": 0,
+        "recently_resolved_count": 0
       },
       {
         "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/python-legacy",
         "latest_scan_id": null,
-        "latest_generated_at": "2026-04-18T19:46:15+00:00",
+        "latest_generated_at": "2026-04-18T20:02:36+00:00",
         "dependency_count": 2,
         "open_finding_count": 15,
         "urgent_open_finding_count": 0,
         "patch_gap_open_finding_count": 1,
         "top_urgency_label": "high",
-        "oldest_open_public_days": 2748.1,
+        "oldest_open_public_days": 2748.11,
         "average_resolved_mttp_days": null,
         "average_resolved_detection_days": null,
-        "resolved_finding_count": 0
+        "resolved_finding_count": 0,
+        "newly_dangerous_count": 0,
+        "recently_resolved_count": 0
       }
     ],
     "newly_dangerous_count": 0,
     "recently_resolved_count": 0,
     "signals": []
+  },
+  "scorecard": {
+    "generated_at": "2026-04-18T20:02:36+00:00",
+    "fleet_score": 70,
+    "grade": "C",
+    "status_label": "exposed",
+    "trend_label": "holding",
+    "summary": "The fleet is holding, but patch-gap pressure is still active.",
+    "average_target_score": 70.5,
+    "strongest_target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/python-legacy",
+    "weakest_target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/npm-legacy",
+    "healthy_target_count": 0,
+    "exposed_target_count": 0,
+    "targets": [
+      {
+        "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/python-legacy",
+        "latest_scan_id": null,
+        "latest_generated_at": "2026-04-18T20:02:36+00:00",
+        "score": 72,
+        "grade": "C",
+        "status_label": "exposed",
+        "trend_label": "holding",
+        "summary": "Top live urgency is high.",
+        "reasons": [
+          "Top live urgency is high.",
+          "1 public-fix findings remain unpatched.",
+          "Oldest open public fix has been exposed for 2748.1 days."
+        ],
+        "open_finding_count": 15,
+        "urgent_open_finding_count": 0,
+        "patch_gap_open_finding_count": 1,
+        "newly_dangerous_count": 0,
+        "recently_resolved_count": 0,
+        "oldest_open_public_days": 2748.11,
+        "average_resolved_mttp_days": null
+      },
+      {
+        "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/npm-legacy",
+        "latest_scan_id": null,
+        "latest_generated_at": "2026-04-18T20:02:36+00:00",
+        "score": 69,
+        "grade": "C",
+        "status_label": "exposed",
+        "trend_label": "holding",
+        "summary": "Top live urgency is high.",
+        "reasons": [
+          "Top live urgency is high.",
+          "2 public-fix findings remain unpatched.",
+          "Oldest open public fix has been exposed for 1808.2 days."
+        ],
+        "open_finding_count": 5,
+        "urgent_open_finding_count": 0,
+        "patch_gap_open_finding_count": 2,
+        "newly_dangerous_count": 0,
+        "recently_resolved_count": 0,
+        "oldest_open_public_days": 1808.16,
+        "average_resolved_mttp_days": null
+      }
+    ]
   },
   "targets": [
     {
@@ -50,7 +113,7 @@
       "scan": {
         "scan_id": null,
         "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/npm-legacy",
-        "generated_at": "2026-04-18T19:46:15+00:00",
+        "generated_at": "2026-04-18T20:02:36+00:00",
         "dependencies": [
           {
             "ecosystem": "npm",
@@ -305,7 +368,7 @@
       },
       "plan": {
         "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/npm-legacy",
-        "generated_at": "2026-04-18T19:46:15+00:00",
+        "generated_at": "2026-04-18T20:02:36+00:00",
         "policy_path": null,
         "recommendations": [
           {
@@ -340,37 +403,46 @@
       },
       "remediation_preview": {
         "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/npm-legacy",
-        "generated_at": "2026-04-18T19:46:16+00:00",
+        "generated_at": "2026-04-18T20:02:36+00:00",
         "policy_path": null,
         "apply_mode": false,
-        "changed_files": [
+        "changed_files": [],
+        "skipped": [
           {
-            "source_file": "package.json",
-            "ecosystem": "npm",
-            "action": "update-pinned-package-json",
-            "package_names": [
-              "lodash"
-            ],
-            "changed": true,
-            "before_digest": "db5d1157e574213b8b58a8a31e432bfbddca7c4b43e9b66e242cf2237107831a",
-            "after_digest": "bb5a0d439d85d119eecd1b749216cbf9dc5044ebd0ce70fff9d48d07e524945c"
-          },
-          {
+            "name": "lodash",
             "source_file": "package-lock.json",
-            "ecosystem": "npm",
+            "current_version": "4.17.20",
+            "target_version": "4.18.0",
             "action": "refresh-node-lockfile",
-            "package_names": [
-              "lodash"
-            ],
-            "changed": true,
-            "before_digest": "ad5c9496d569e559565fe88ce70d00b61bf433349288036445ed9a6b86e5dbdd",
-            "after_digest": "e514d8f56566b67e5a17ec510cf83ce30fb2e567f7c5d0e6fcc2397919e36b96"
+            "urgency_label": "high",
+            "reason": "Automatic npm remediation currently supports exact-pinned package.json entries only."
           }
         ],
-        "skipped": [],
-        "changed_file_count": 2,
-        "applied_recommendation_count": 1,
-        "skipped_count": 0
+        "changed_file_count": 0,
+        "applied_recommendation_count": 0,
+        "skipped_count": 1
+      },
+      "scorecard": {
+        "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/npm-legacy",
+        "latest_scan_id": null,
+        "latest_generated_at": "2026-04-18T20:02:36+00:00",
+        "score": 69,
+        "grade": "C",
+        "status_label": "exposed",
+        "trend_label": "holding",
+        "summary": "Top live urgency is high.",
+        "reasons": [
+          "Top live urgency is high.",
+          "2 public-fix findings remain unpatched.",
+          "Oldest open public fix has been exposed for 1808.2 days."
+        ],
+        "open_finding_count": 5,
+        "urgent_open_finding_count": 0,
+        "patch_gap_open_finding_count": 2,
+        "newly_dangerous_count": 0,
+        "recently_resolved_count": 0,
+        "oldest_open_public_days": 1808.16,
+        "average_resolved_mttp_days": null
       },
       "urgent_finding_count": 0,
       "patch_gap_finding_count": 2
@@ -381,7 +453,7 @@
       "scan": {
         "scan_id": null,
         "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/python-legacy",
-        "generated_at": "2026-04-18T19:46:15+00:00",
+        "generated_at": "2026-04-18T20:02:36+00:00",
         "dependencies": [
           {
             "ecosystem": "PyPI",
@@ -1098,7 +1170,7 @@
       },
       "plan": {
         "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/python-legacy",
-        "generated_at": "2026-04-18T19:46:15+00:00",
+        "generated_at": "2026-04-18T20:02:36+00:00",
         "policy_path": null,
         "recommendations": [
           {
@@ -1164,7 +1236,7 @@
       },
       "remediation_preview": {
         "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/python-legacy",
-        "generated_at": "2026-04-18T19:46:15+00:00",
+        "generated_at": "2026-04-18T20:02:36+00:00",
         "policy_path": null,
         "apply_mode": false,
         "changed_files": [
@@ -1185,6 +1257,28 @@
         "changed_file_count": 1,
         "applied_recommendation_count": 2,
         "skipped_count": 0
+      },
+      "scorecard": {
+        "target_path": "/Users/sravansridhar/Documents/Codex/glasswall/examples/showcase/python-legacy",
+        "latest_scan_id": null,
+        "latest_generated_at": "2026-04-18T20:02:36+00:00",
+        "score": 72,
+        "grade": "C",
+        "status_label": "exposed",
+        "trend_label": "holding",
+        "summary": "Top live urgency is high.",
+        "reasons": [
+          "Top live urgency is high.",
+          "1 public-fix findings remain unpatched.",
+          "Oldest open public fix has been exposed for 2748.1 days."
+        ],
+        "open_finding_count": 15,
+        "urgent_open_finding_count": 0,
+        "patch_gap_open_finding_count": 1,
+        "newly_dangerous_count": 0,
+        "recently_resolved_count": 0,
+        "oldest_open_public_days": 2748.11,
+        "average_resolved_mttp_days": null
       },
       "urgent_finding_count": 0,
       "patch_gap_finding_count": 1

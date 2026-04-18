@@ -215,3 +215,69 @@ def test_fleet_api_returns_aggregated_pressure_metrics(tmp_path) -> None:
     assert payload["total_urgent_findings"] == 1
     assert payload["newly_dangerous_count"] == 0
     assert payload["targets"][0]["target_path"] == "/repo-a"
+
+
+def test_scorecard_api_returns_grades_and_summary(tmp_path) -> None:
+    settings = Settings(
+        db_path=str(tmp_path / "glasswall.db"),
+        cache_dir=str(tmp_path / "cache"),
+        request_timeout_seconds=5,
+        osv_query_ttl_seconds=10,
+        osv_vuln_ttl_seconds=10,
+        kev_ttl_seconds=10,
+        max_concurrent_detail_requests=2,
+        github_app_id=None,
+        github_private_key=None,
+        github_webhook_secret=None,
+        github_api_base_url="https://api.github.com",
+        github_api_version="2026-03-10",
+        github_comment_mode="off",
+        github_auto_pr_mode="off",
+        github_auto_pr_branch="glasswall/remediation",
+        github_auto_pr_max_upgrades=3,
+        github_auto_pr_commit_message="glasswall remediation",
+        github_auto_pr_title="[glasswall] apply top supported patch-gap remediation",
+    )
+    database = Database(settings.db_path)
+    dependency = Dependency("PyPI", "requests", "2.19.0", "requirements.txt")
+    database.save_scan(
+        ScanResult(
+            scan_id=None,
+            target_path="/repo-a",
+            generated_at="2026-04-03T00:00:00+00:00",
+            dependencies=(dependency,),
+            findings=(
+                Finding(
+                    dependency=dependency,
+                    vulnerability=Vulnerability(
+                        osv_id="GHSA-one",
+                        source_ids=("GHSA-one",),
+                        aliases=("CVE-2026-1234",),
+                        summary="Example issue",
+                        details=None,
+                        published="2026-04-01T00:00:00+00:00",
+                        modified="2026-04-01T00:00:00+00:00",
+                        fixed_versions=("2.33.0",),
+                        references=("https://example.com",),
+                        kev=False,
+                        kev_due_date=None,
+                        kev_ransomware=None,
+                    ),
+                    urgency_score=80,
+                    urgency_label="urgent",
+                    patch_gap=True,
+                    rationale=("urgent",),
+                ),
+            ),
+            policy_path=None,
+        )
+    )
+
+    client = TestClient(create_app(settings=settings, database=database))
+    response = client.get("/api/scorecard")
+
+    assert response.status_code == 200
+    payload = response.json()["scorecard"]
+    assert payload["fleet_score"] <= 100
+    assert payload["targets"][0]["target_path"] == "/repo-a"
+    assert payload["targets"][0]["grade"] in {"C", "D", "F"}

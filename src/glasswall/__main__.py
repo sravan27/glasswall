@@ -8,7 +8,7 @@ from pathlib import Path
 
 import uvicorn
 
-from glasswall.analytics import build_fleet_overview
+from glasswall.analytics import build_fleet_overview, build_fleet_scorecard
 from glasswall.diffing import build_scan_delta
 from glasswall.models import ScanOverview, urgency_rank
 from glasswall.policy import load_scan_policy
@@ -17,6 +17,7 @@ from glasswall.render import (
     render_plan_output,
     render_remediation_output,
     render_scan_output,
+    render_scorecard_output,
     render_showcase_output,
     write_output,
 )
@@ -45,6 +46,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     fleet_parser = subparsers.add_parser("fleet", help="Show fleet pressure and MTTP from scan history")
     fleet_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
+
+    scorecard_parser = subparsers.add_parser("scorecard", help="Show fleet grades and patch-gap scorecards from scan history")
+    scorecard_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
 
     plan_parser = subparsers.add_parser("plan", help="Build a remediation plan for a repository path")
     plan_parser.add_argument("path", help="Local repository path to plan")
@@ -119,6 +123,15 @@ def run_fleet(output_format: str) -> int:
     histories = tuple(database.scan_history(target_path) for target_path in database.list_target_paths())
     overview = build_fleet_overview(histories)
     print(render_fleet_output(overview, output_format))
+    return 0
+
+
+def run_scorecard(output_format: str) -> int:
+    settings = load_settings()
+    database = Database(settings.db_path)
+    histories = tuple(database.scan_history(target_path) for target_path in database.list_target_paths())
+    scorecard = build_fleet_scorecard(build_fleet_overview(histories))
+    print(render_scorecard_output(scorecard, output_format))
     return 0
 
 
@@ -211,6 +224,9 @@ def main() -> int:
 
     if args.command == "fleet":
         return run_fleet(args.format)
+
+    if args.command == "scorecard":
+        return run_scorecard(args.format)
 
     if args.command == "plan":
         return asyncio.run(

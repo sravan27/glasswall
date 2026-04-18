@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from glasswall.analytics import FleetOverview, FleetSignal
+from glasswall.analytics import FleetOverview, FleetScorecard, FleetSignal, TargetScorecard
 from glasswall.diffing import ScanDelta
 from glasswall.models import (
     Finding,
@@ -54,6 +54,14 @@ def render_fleet_output(overview: FleetOverview, output_format: str) -> str:
     if output_format == "markdown":
         return render_fleet_markdown(overview)
     return render_fleet_summary(overview)
+
+
+def render_scorecard_output(scorecard: FleetScorecard, output_format: str) -> str:
+    if output_format == "json":
+        return json.dumps(scorecard.to_dict(), indent=2)
+    if output_format == "markdown":
+        return render_scorecard_markdown(scorecard)
+    return render_scorecard_summary(scorecard)
 
 
 def render_showcase_output(bundle: ShowcaseBundle, output_format: str) -> str:
@@ -272,6 +280,7 @@ def render_showcase_summary(bundle: ShowcaseBundle) -> str:
     lines = [
         f"Showcase: {bundle.title}",
         f"Generated: {bundle.generated_at}",
+        f"Fleet score: {bundle.scorecard.grade} ({bundle.scorecard.fleet_score})",
         f"Targets: {bundle.fleet.target_count}",
         f"Open findings: {bundle.fleet.total_open_findings}",
         f"Urgent findings: {bundle.fleet.total_urgent_findings}",
@@ -282,7 +291,8 @@ def render_showcase_summary(bundle: ShowcaseBundle) -> str:
         lines.extend(["", "Target snapshots:"])
         for target in bundle.targets:
             lines.append(
-                f"{target.label}: findings={target.scan.finding_count} urgent={target.urgent_finding_count} "
+                f"{target.label}: grade={target.scorecard.grade} score={target.scorecard.score} "
+                f"findings={target.scan.finding_count} urgent={target.urgent_finding_count} "
                 f"patch-gap={target.patch_gap_finding_count} recommendations={target.plan.recommendation_count}"
             )
     return "\n".join(lines)
@@ -294,6 +304,7 @@ def render_showcase_markdown(bundle: ShowcaseBundle) -> str:
         "",
         f"- Title: `{bundle.title}`",
         f"- Generated: `{bundle.generated_at}`",
+        f"- Fleet score: `{bundle.scorecard.grade} / {bundle.scorecard.fleet_score}`",
         f"- Targets: `{bundle.fleet.target_count}`",
         f"- Open findings: `{bundle.fleet.total_open_findings}`",
         f"- Urgent findings: `{bundle.fleet.total_urgent_findings}`",
@@ -306,6 +317,8 @@ def render_showcase_markdown(bundle: ShowcaseBundle) -> str:
                 "",
                 f"## {target.label}",
                 f"- Target: `{target.target_path}`",
+                f"- Score: `{target.scorecard.grade} / {target.scorecard.score}`",
+                f"- Trend: `{target.scorecard.trend_label}`",
                 f"- Findings: `{target.scan.finding_count}`",
                 f"- Urgent findings: `{target.urgent_finding_count}`",
                 f"- Patch-gap findings: `{target.patch_gap_finding_count}`",
@@ -313,6 +326,11 @@ def render_showcase_markdown(bundle: ShowcaseBundle) -> str:
                 f"- Dry-run changed files: `{target.remediation_preview.changed_file_count}`",
             ]
         )
+        if target.scorecard.reasons:
+            lines.append("")
+            lines.append("### Scorecard reasons")
+            for reason in target.scorecard.reasons:
+                lines.append(f"- {reason}")
         if target.scan.findings:
             lines.append("")
             lines.append("### Top findings")
@@ -323,6 +341,48 @@ def render_showcase_markdown(bundle: ShowcaseBundle) -> str:
             lines.append("### Top remediation queue")
             for recommendation in target.plan.recommendations[:5]:
                 lines.append(_plan_summary_line(recommendation))
+    return "\n".join(lines)
+
+
+def render_scorecard_summary(scorecard: FleetScorecard) -> str:
+    lines = [
+        f"Fleet scorecard generated: {scorecard.generated_at}",
+        f"Fleet score: {scorecard.grade} ({scorecard.fleet_score})",
+        f"Status: {scorecard.status_label}",
+        f"Trend: {scorecard.trend_label}",
+        f"Average target score: {scorecard.average_target_score if scorecard.average_target_score is not None else 'n/a'}",
+        f"Healthy targets: {scorecard.healthy_target_count}",
+        f"Exposed targets: {scorecard.exposed_target_count}",
+        f"Strongest target: {scorecard.strongest_target_path or 'n/a'}",
+        f"Weakest target: {scorecard.weakest_target_path or 'n/a'}",
+        f"Summary: {scorecard.summary}",
+    ]
+    if scorecard.targets:
+        lines.extend(["", "Target grades:"])
+        for target in scorecard.targets:
+            lines.append(_scorecard_target_summary_line(target))
+    return "\n".join(lines)
+
+
+def render_scorecard_markdown(scorecard: FleetScorecard) -> str:
+    lines = [
+        "# Glasswall Fleet Scorecard",
+        "",
+        f"- Generated: `{scorecard.generated_at}`",
+        f"- Fleet score: `{scorecard.grade} / {scorecard.fleet_score}`",
+        f"- Status: `{scorecard.status_label}`",
+        f"- Trend: `{scorecard.trend_label}`",
+        f"- Average target score: `{scorecard.average_target_score if scorecard.average_target_score is not None else 'n/a'}`",
+        f"- Healthy targets: `{scorecard.healthy_target_count}`",
+        f"- Exposed targets: `{scorecard.exposed_target_count}`",
+        f"- Strongest target: `{scorecard.strongest_target_path or 'n/a'}`",
+        f"- Weakest target: `{scorecard.weakest_target_path or 'n/a'}`",
+        f"- Summary: `{scorecard.summary}`",
+    ]
+    if scorecard.targets:
+        lines.extend(["", "## Target grades"])
+        for target in scorecard.targets:
+            lines.append(_scorecard_target_summary_line(target))
     return "\n".join(lines)
 
 
@@ -513,4 +573,13 @@ def _fleet_signal_summary_line(signal: FleetSignal) -> str:
         f"{signal.vulnerability_id} urgency={signal.urgency_label} "
         f"patch-gap={'yes' if signal.patch_gap else 'no'} "
         f"public-days={signal.days_since_public if signal.days_since_public is not None else 'n/a'}"
+    )
+
+
+def _scorecard_target_summary_line(target: TargetScorecard) -> str:
+    return (
+        f"- [{target.grade}] {target.target_path} score={target.score} "
+        f"status={target.status_label} trend={target.trend_label} "
+        f"open={target.open_finding_count} urgent={target.urgent_open_finding_count} "
+        f"patch-gap={target.patch_gap_open_finding_count}"
     )

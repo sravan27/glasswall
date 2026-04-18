@@ -4,7 +4,15 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from glasswall.analytics import FleetOverview, build_fleet_overview
+from glasswall.analytics import (
+    FleetOverview,
+    FleetScorecard,
+    TargetScorecard,
+    build_fleet_overview,
+    build_fleet_scorecard,
+    build_target_pressure,
+    build_target_scorecard,
+)
 from glasswall.models import Finding, RemediationPlan, RemediationRun, ScanResult, utc_now_iso, urgency_rank
 from glasswall.service import GlasswallService, normalize_target_path
 
@@ -16,6 +24,7 @@ class ShowcaseTarget:
     scan: ScanResult
     plan: RemediationPlan
     remediation_preview: RemediationRun
+    scorecard: TargetScorecard
 
     @property
     def urgent_finding_count(self) -> int:
@@ -32,6 +41,7 @@ class ShowcaseTarget:
             "scan": _serialize_scan(self.scan),
             "plan": self.plan.to_dict(),
             "remediation_preview": self.remediation_preview.to_dict(),
+            "scorecard": self.scorecard.to_dict(),
             "urgent_finding_count": self.urgent_finding_count,
             "patch_gap_finding_count": self.patch_gap_finding_count,
         }
@@ -42,6 +52,7 @@ class ShowcaseBundle:
     title: str
     generated_at: str
     fleet: FleetOverview
+    scorecard: FleetScorecard
     targets: tuple[ShowcaseTarget, ...]
 
     def to_dict(self) -> dict[str, Any]:
@@ -49,6 +60,7 @@ class ShowcaseBundle:
             "title": self.title,
             "generated_at": self.generated_at,
             "fleet": self.fleet.to_dict(),
+            "scorecard": self.scorecard.to_dict(),
             "targets": [target.to_dict() for target in self.targets],
         }
 
@@ -66,7 +78,6 @@ async def build_showcase(
     service = service or GlasswallService()
     showcase_targets: list[ShowcaseTarget] = []
     histories: list[tuple[ScanResult, ...]] = []
-
     for raw_path in target_paths:
         normalized_path = normalize_target_path(raw_path)
         root = Path(normalized_path)
@@ -78,6 +89,8 @@ async def build_showcase(
             apply=False,
             max_recommendations=max_recommendations,
         )
+        target_pressure = build_target_pressure((scan,))
+        histories.append((scan,))
         showcase_targets.append(
             ShowcaseTarget(
                 label=_derive_label(root),
@@ -85,14 +98,16 @@ async def build_showcase(
                 scan=scan,
                 plan=plan,
                 remediation_preview=remediation_preview,
+                scorecard=build_target_scorecard(target_pressure),
             )
         )
-        histories.append((scan,))
+    fleet = build_fleet_overview(tuple(histories))
 
     return ShowcaseBundle(
         title=title,
         generated_at=utc_now_iso(),
-        fleet=build_fleet_overview(tuple(histories)),
+        fleet=fleet,
+        scorecard=build_fleet_scorecard(fleet),
         targets=tuple(sorted(showcase_targets, key=_showcase_target_sort_key)),
     )
 

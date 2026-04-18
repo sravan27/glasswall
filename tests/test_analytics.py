@@ -1,4 +1,4 @@
-from glasswall.analytics import build_fleet_overview, build_target_pressure
+from glasswall.analytics import build_fleet_overview, build_fleet_scorecard, build_target_pressure
 from glasswall.models import Dependency, Finding, ScanResult, Vulnerability
 
 
@@ -127,6 +127,74 @@ def test_build_fleet_overview_emits_change_feed_signals() -> None:
     assert overview.recently_resolved_count == 0
     assert overview.signals[0].kind == "new"
     assert overview.signals[0].kind_label == "Newly dangerous"
+
+
+def test_build_fleet_scorecard_grades_targets_and_trend() -> None:
+    dependency = Dependency("PyPI", "requests", "2.19.0", "requirements.txt")
+    history_a = (
+        ScanResult(
+            scan_id=1,
+            target_path="/repo-a",
+            generated_at="2026-04-10T00:00:00+00:00",
+            dependencies=(dependency,),
+            findings=(),
+            policy_path=None,
+        ),
+        ScanResult(
+            scan_id=2,
+            target_path="/repo-a",
+            generated_at="2026-04-14T00:00:00+00:00",
+            dependencies=(dependency,),
+            findings=(
+                Finding(
+                    dependency=dependency,
+                    vulnerability=_vulnerability("CVE-2026-0005", published="2026-04-01T00:00:00+00:00"),
+                    urgency_score=82,
+                    urgency_label="urgent",
+                    patch_gap=True,
+                    rationale=("urgent",),
+                ),
+            ),
+            policy_path=None,
+        ),
+    )
+    history_b = (
+        ScanResult(
+            scan_id=3,
+            target_path="/repo-b",
+            generated_at="2026-04-10T00:00:00+00:00",
+            dependencies=(dependency,),
+            findings=(
+                Finding(
+                    dependency=dependency,
+                    vulnerability=_vulnerability("CVE-2026-0006", published="2026-04-02T00:00:00+00:00"),
+                    urgency_score=50,
+                    urgency_label="high",
+                    patch_gap=True,
+                    rationale=("high",),
+                ),
+            ),
+            policy_path=None,
+        ),
+        ScanResult(
+            scan_id=4,
+            target_path="/repo-b",
+            generated_at="2026-04-15T00:00:00+00:00",
+            dependencies=(dependency,),
+            findings=(),
+            policy_path=None,
+        ),
+    )
+
+    scorecard = build_fleet_scorecard(build_fleet_overview((history_a, history_b)))
+
+    assert scorecard.targets[0].target_path == "/repo-b"
+    assert scorecard.targets[-1].target_path == "/repo-a"
+    assert scorecard.targets[-1].trend_label == "backsliding"
+    assert scorecard.targets[0].trend_label == "recovering"
+    assert scorecard.weakest_target_path == "/repo-a"
+    assert scorecard.strongest_target_path == "/repo-b"
+    assert scorecard.grade in {"B", "C", "D", "F"}
 
 
 def _vulnerability(alias: str, published: str) -> Vulnerability:

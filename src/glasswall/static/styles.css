@@ -358,6 +358,13 @@ code {
   margin-top: 1rem;
 }
 
+.score-band {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
 .metric-card {
   padding: 1.05rem 1.1rem;
   border-radius: var(--radius-lg);
@@ -368,6 +375,10 @@ code {
 }
 
 .fleet-hero {
+  grid-column: span 2;
+}
+
+.score-hero {
   grid-column: span 2;
 }
 
@@ -386,6 +397,10 @@ code {
   color: var(--copper);
 }
 
+.metric-score strong {
+  color: var(--teal);
+}
+
 .signal-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(280px, 0.8fr);
@@ -394,6 +409,10 @@ code {
 }
 
 .fleet-targets {
+  margin-top: 1rem;
+}
+
+.score-targets {
   margin-top: 1rem;
 }
 
@@ -687,6 +706,31 @@ code {
   border-color: rgba(21, 76, 87, 0.16);
 }
 
+.urgency-hardened {
+  border-color: rgba(21, 76, 87, 0.22);
+  background: rgba(236, 248, 247, 0.9);
+}
+
+.urgency-stable {
+  border-color: rgba(21, 76, 87, 0.18);
+  background: rgba(245, 251, 250, 0.9);
+}
+
+.urgency-exposed {
+  border-color: rgba(159, 124, 34, 0.22);
+  background: rgba(255, 249, 236, 0.92);
+}
+
+.urgency-lagging {
+  border-color: rgba(198, 96, 48, 0.22);
+  background: rgba(255, 243, 236, 0.92);
+}
+
+.urgency-critical {
+  border-color: rgba(151, 41, 26, 0.24);
+  background: rgba(255, 236, 233, 0.92);
+}
+
 .empty-state {
   padding: 2rem;
   border-radius: var(--radius-xl);
@@ -723,11 +767,19 @@ code {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .score-band {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .metric-card-wide {
     grid-column: span 3;
   }
 
   .fleet-hero {
+    grid-column: span 3;
+  }
+
+  .score-hero {
     grid-column: span 3;
   }
 }
@@ -751,6 +803,7 @@ code {
   .field-grid,
   .metric-band,
   .fleet-band,
+  .score-band,
   .delta-grid,
   .status-grid {
     grid-template-columns: 1fr;
@@ -761,6 +814,10 @@ code {
   }
 
   .fleet-hero {
+    grid-column: span 1;
+  }
+
+  .score-hero {
     grid-column: span 1;
   }
 

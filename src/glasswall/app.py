@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from glasswall.analytics import FleetOverview, build_fleet_overview
+from glasswall.analytics import FleetOverview, FleetScorecard, build_fleet_overview, build_fleet_scorecard
 from glasswall.diffing import build_scan_delta
 from glasswall.github_app import GitHubWebhookVerifier
 from glasswall.github_webhooks import GitHubWebhookProcessor
@@ -64,6 +64,11 @@ def create_app(
     async def fleet_overview() -> JSONResponse:
         overview = _build_fleet_overview(database)
         return JSONResponse({"fleet": overview.to_dict()})
+
+    @app.get("/api/scorecard")
+    async def fleet_scorecard() -> JSONResponse:
+        scorecard = _build_fleet_scorecard(database)
+        return JSONResponse({"scorecard": scorecard.to_dict()})
 
     @app.get("/api/scans")
     async def list_scans(limit: int = 20, target_path: str | None = None) -> JSONResponse:
@@ -189,6 +194,7 @@ def create_app(
     async def index(request: Request, scan_id: int | None = None) -> HTMLResponse:
         latest = database.get_scan(scan_id) if scan_id is not None else database.latest_scan()
         fleet = _build_fleet_overview(database)
+        scorecard = _build_fleet_scorecard(database)
         delta = None
         plan = None
         plan_error = None
@@ -204,6 +210,7 @@ def create_app(
             request=request,
             latest=latest,
             fleet=fleet,
+            scorecard=scorecard,
             plan=plan,
             delta=delta,
             history=database.list_scans(limit=8, target_path=latest.target_path if latest else None),
@@ -226,6 +233,7 @@ def create_app(
         except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
             latest = database.latest_scan()
             fleet = _build_fleet_overview(database)
+            scorecard = _build_fleet_scorecard(database)
             delta = None
             plan = None
             plan_error = None
@@ -241,6 +249,7 @@ def create_app(
                 request=request,
                 latest=latest,
                 fleet=fleet,
+                scorecard=scorecard,
                 plan=plan,
                 delta=delta,
                 history=database.list_scans(limit=8, target_path=latest.target_path if latest else None),
@@ -283,6 +292,7 @@ def _render_index(
     request: Request,
     latest: ScanResult | None,
     fleet: FleetOverview,
+    scorecard: FleetScorecard,
     plan: RemediationPlan | None,
     delta,
     history,
@@ -299,6 +309,8 @@ def _render_index(
         context={
             "latest": latest,
             "fleet": fleet,
+            "scorecard": scorecard,
+            "scorecard_targets": list(scorecard.targets[:5]),
             "fleet_targets": list(fleet.targets[:5]),
             "fleet_signals": list(fleet.signals[:8]),
             "plan": plan,
@@ -328,6 +340,10 @@ async def _build_plan(service: GlasswallService, scan: ScanResult | None) -> Rem
 def _build_fleet_overview(database: Database) -> FleetOverview:
     histories = tuple(database.scan_history(target_path) for target_path in database.list_target_paths())
     return build_fleet_overview(histories)
+
+
+def _build_fleet_scorecard(database: Database) -> FleetScorecard:
+    return build_fleet_scorecard(_build_fleet_overview(database))
 
 
 def _github_status(settings: Settings) -> dict[str, object]:

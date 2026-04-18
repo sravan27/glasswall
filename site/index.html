@@ -32,11 +32,11 @@
           <p id="snapshot-updated" class="proof-note">Pulling the latest showcase bundle from this repo.</p>
           <div class="proof-grid" id="proof-grid">
             <article class="proof-card">
-              <span>Targets</span>
+              <span>Fleet score</span>
               <strong>--</strong>
             </article>
             <article class="proof-card">
-              <span>Open findings</span>
+              <span>Targets</span>
               <strong>--</strong>
             </article>
             <article class="proof-card">
@@ -45,6 +45,10 @@
             </article>
             <article class="proof-card">
               <span>Patch-gap</span>
+              <strong>--</strong>
+            </article>
+            <article class="proof-card">
+              <span>Exposed targets</span>
               <strong>--</strong>
             </article>
           </div>
@@ -76,6 +80,27 @@
         <article class="card metric">
           <span>Scoreboard</span>
           <strong>Patch-gap MTTP</strong>
+        </article>
+      </section>
+
+      <section class="score-strip">
+        <article class="panel">
+          <p class="card-label">Fleet scorecard</p>
+          <strong id="score-grade">Loading...</strong>
+          <p id="score-summary" class="panel-copy">Waiting for the generated showcase bundle.</p>
+        </article>
+        <article class="panel">
+          <p class="card-label">Trend</p>
+          <strong id="score-trend">--</strong>
+          <p id="score-trend-copy" class="panel-copy">No live trend yet.</p>
+        </article>
+        <article class="panel">
+          <p class="card-label">Strongest target</p>
+          <strong id="score-strongest">--</strong>
+        </article>
+        <article class="panel">
+          <p class="card-label">Weakest target</p>
+          <strong id="score-weakest">--</strong>
         </article>
       </section>
 
@@ -196,15 +221,22 @@
             throw new Error(`HTTP ${response.status}`);
           }
           const payload = await response.json();
-          const { fleet, targets, title, generated_at: generatedAt } = payload;
-          document.getElementById("snapshot-title").textContent = title;
+          const { fleet, scorecard, targets, title, generated_at: generatedAt } = payload;
+          document.getElementById("snapshot-title").textContent = `${title} · ${scorecard.grade} / ${scorecard.fleet_score}`;
           document.getElementById("snapshot-updated").textContent = `Last generated ${new Date(generatedAt).toLocaleString()}.`;
+          document.getElementById("score-grade").textContent = `${scorecard.grade} / ${scorecard.fleet_score}`;
+          document.getElementById("score-summary").textContent = scorecard.summary;
+          document.getElementById("score-trend").textContent = scorecard.trend_label;
+          document.getElementById("score-trend-copy").textContent = `${scorecard.healthy_target_count} healthy targets · ${scorecard.exposed_target_count} exposed targets`;
+          document.getElementById("score-strongest").textContent = scorecard.strongest_target_path || "n/a";
+          document.getElementById("score-weakest").textContent = scorecard.weakest_target_path || "n/a";
 
           document.getElementById("proof-grid").innerHTML = [
+            metricCard("Fleet score", `${scorecard.grade} / ${scorecard.fleet_score}`),
             metricCard("Targets", numberFormat.format(fleet.target_count)),
-            metricCard("Open findings", numberFormat.format(fleet.total_open_findings)),
             metricCard("Urgent findings", numberFormat.format(fleet.total_urgent_findings)),
             metricCard("Patch-gap", numberFormat.format(fleet.total_patch_gap_findings)),
+            metricCard("Exposed targets", numberFormat.format(scorecard.exposed_target_count)),
           ].join("");
 
           document.getElementById("target-list").innerHTML = targets
@@ -215,7 +247,8 @@
                   <div class="target-head">
                     <div>
                       <p class="target-label">${target.label}</p>
-                      <strong>${target.scan.top_urgency_label || "clean"}</strong>
+                      <strong>${target.scorecard.grade} / ${target.scorecard.score}</strong>
+                      <span class="target-grade">${target.scorecard.status_label} · ${target.scorecard.trend_label}</span>
                     </div>
                     <div class="target-metrics">
                       <span>${target.scan.finding_count} findings</span>

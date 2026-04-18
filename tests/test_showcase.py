@@ -121,13 +121,17 @@ def test_build_showcase_returns_sorted_targets_and_compact_metrics(tmp_path) -> 
 
     assert bundle.title == "Demo"
     assert bundle.fleet.target_count == 2
+    assert bundle.scorecard.fleet_score <= 100
     assert bundle.targets[0].label == "Npm Legacy"
     assert bundle.targets[0].urgent_finding_count == 1
     assert bundle.targets[0].patch_gap_finding_count == 1
     assert bundle.targets[0].remediation_preview.applied_recommendation_count == 1
+    assert bundle.targets[0].scorecard.score <= 100
     payload = bundle.to_dict()
+    assert payload["scorecard"]["fleet_score"] <= 100
     assert payload["targets"][0]["scan"]["finding_count"] == 1
     assert payload["targets"][0]["plan"]["recommendation_count"] == 1
+    assert payload["targets"][0]["scorecard"]["score"] <= 100
 
 
 def test_render_showcase_outputs_include_target_snapshot(tmp_path) -> None:
@@ -139,6 +143,8 @@ def test_render_showcase_outputs_include_target_snapshot(tmp_path) -> None:
     markdown = render_showcase_markdown(bundle)
 
     assert "Showcase: Glasswall Showcase" in summary
+    assert "Fleet score:" in summary
     assert "python legacy".title() in summary
     assert "## Python Legacy" in markdown
+    assert "### Scorecard reasons" in markdown
     assert "Top remediation queue" in markdown

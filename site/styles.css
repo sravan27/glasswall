@@ -175,6 +175,7 @@ pre {
 
 .proof-grid,
 .proof-band,
+.score-strip,
 .launch-grid,
 .live-layout {
   display: grid;
@@ -210,6 +211,11 @@ pre {
 }
 
 .proof-band {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.score-strip {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 1rem;
 }
@@ -306,6 +312,14 @@ pre {
 
 .target-head strong {
   font-size: 1.15rem;
+  text-transform: capitalize;
+}
+
+.target-grade {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.88rem;
   text-transform: capitalize;
 }
 
@@ -416,6 +430,7 @@ blockquote {
 
 @media (max-width: 960px) {
   .proof-band,
+  .score-strip,
   .steps {
     grid-template-columns: 1fr;
   }
