@@ -10,10 +10,12 @@ import uvicorn
 
 from glasswall.analytics import build_fleet_overview, build_fleet_scorecard
 from glasswall.diffing import build_scan_delta
+from glasswall.github_setup import GitHubSetupService
 from glasswall.models import ScanOverview, urgency_rank
 from glasswall.policy import load_scan_policy
 from glasswall.render import (
     render_fleet_output,
+    render_github_setup_output,
     render_plan_output,
     render_remediation_output,
     render_scan_output,
@@ -49,6 +51,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     scorecard_parser = subparsers.add_parser("scorecard", help="Show fleet grades and patch-gap scorecards from scan history")
     scorecard_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
+
+    github_setup_parser = subparsers.add_parser("github-setup", help="Preview GitHub App onboarding manifest and checks")
+    github_setup_parser.add_argument("--public-base-url", help="Externally reachable Glasswall base URL")
+    github_setup_parser.add_argument("--account-type", choices=("personal", "organization"), default="personal")
+    github_setup_parser.add_argument("--owner", help="Organization slug when account type is organization")
+    github_setup_parser.add_argument("--app-name", default="Glasswall Patch Gap Ops")
+    github_setup_parser.add_argument("--public-app", action="store_true")
+    github_setup_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
+    github_setup_parser.add_argument("--output", help="Optional file path for rendered output")
 
     plan_parser = subparsers.add_parser("plan", help="Build a remediation plan for a repository path")
     plan_parser.add_argument("path", help="Local repository path to plan")
@@ -132,6 +143,32 @@ def run_scorecard(output_format: str) -> int:
     histories = tuple(database.scan_history(target_path) for target_path in database.list_target_paths())
     scorecard = build_fleet_scorecard(build_fleet_overview(histories))
     print(render_scorecard_output(scorecard, output_format))
+    return 0
+
+
+def run_github_setup(
+    public_base_url: str | None,
+    account_type: str,
+    owner: str | None,
+    app_name: str,
+    public_app: bool,
+    output_format: str,
+    output_path: str | None,
+) -> int:
+    settings = load_settings()
+    setup_service = GitHubSetupService(settings=settings)
+    try:
+        report = setup_service.build_report(
+            public_base_url=public_base_url,
+            account_type=account_type,
+            owner=owner,
+            app_name=app_name,
+            public_app=public_app,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}")
+        return 2
+    write_output(render_github_setup_output(report, output_format), output_path)
     return 0
 
 
@@ -227,6 +264,17 @@ def main() -> int:
 
     if args.command == "scorecard":
         return run_scorecard(args.format)
+
+    if args.command == "github-setup":
+        return run_github_setup(
+            public_base_url=args.public_base_url,
+            account_type=args.account_type,
+            owner=args.owner,
+            app_name=args.app_name,
+            public_app=args.public_app,
+            output_format=args.format,
+            output_path=args.output,
+        )
 
     if args.command == "plan":
         return asyncio.run(

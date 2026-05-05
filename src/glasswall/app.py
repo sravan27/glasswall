@@ -4,6 +4,7 @@ from dataclasses import replace
 import json
 from pathlib import Path
 
+import httpx
 from fastapi import BackgroundTasks, FastAPI, Form, Header, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +14,7 @@ from pydantic import BaseModel
 from glasswall.analytics import FleetOverview, FleetScorecard, build_fleet_overview, build_fleet_scorecard
 from glasswall.diffing import build_scan_delta
 from glasswall.github_app import GitHubWebhookVerifier
+from glasswall.github_setup import GitHubSetupService
 from glasswall.github_webhooks import GitHubWebhookProcessor
 from glasswall.models import Finding, RemediationPlan, ScanResult
 from glasswall.policy import load_scan_policy
@@ -39,6 +41,7 @@ def create_app(
     service: GlasswallService | None = None,
     database: Database | None = None,
     webhook_processor: GitHubWebhookProcessor | None = None,
+    setup_service: GitHubSetupService | None = None,
 ) -> FastAPI:
     settings = settings or load_settings()
     app = FastAPI(title="Glasswall", version="0.4.0")
@@ -46,6 +49,7 @@ def create_app(
 
     database = database or Database(settings.db_path)
     service = service or GlasswallService(settings=settings)
+    setup_service = setup_service or GitHubSetupService(settings=settings)
     github_status = _github_status(settings)
     github_verifier = GitHubWebhookVerifier(settings.github_webhook_secret) if settings.github_webhook_secret else None
     github_processor = webhook_processor
@@ -59,6 +63,26 @@ def create_app(
     @app.get("/api/github/status")
     async def github_integration_status() -> JSONResponse:
         return JSONResponse({"github": github_status})
+
+    @app.get("/api/github/setup")
+    async def github_setup_report(
+        public_base_url: str | None = None,
+        account_type: str = "personal",
+        owner: str | None = None,
+        app_name: str = "Glasswall Patch Gap Ops",
+        public_app: bool = False,
+    ) -> JSONResponse:
+        try:
+            report = setup_service.build_report(
+                public_base_url=public_base_url,
+                account_type=account_type,
+                owner=owner,
+                app_name=app_name,
+                public_app=public_app,
+            )
+        except ValueError as exc:
+            return JSONResponse({"detail": str(exc)}, status_code=400)
+        return JSONResponse({"setup": report.to_dict()})
 
     @app.get("/api/fleet")
     async def fleet_overview() -> JSONResponse:
@@ -219,6 +243,141 @@ def create_app(
             error=None,
             plan_error=plan_error,
             github_status=github_status,
+        )
+
+    @app.get("/github/setup", response_class=HTMLResponse)
+    async def github_setup(
+        request: Request,
+        public_base_url: str | None = None,
+        account_type: str = "personal",
+        owner: str | None = None,
+        app_name: str = "Glasswall Patch Gap Ops",
+        public_app: bool = False,
+        error: str | None = None,
+    ) -> HTMLResponse:
+        try:
+            report = setup_service.build_report(
+                public_base_url=public_base_url or str(request.base_url).rstrip("/"),
+                account_type=account_type,
+                owner=owner,
+                app_name=app_name,
+                public_app=public_app,
+            )
+        except ValueError as exc:
+            report = setup_service.build_report(public_base_url=None)
+            error = str(exc)
+        return TEMPLATES.TemplateResponse(
+            request=request,
+            name="github_setup.html",
+            context={
+                "github_status": github_status,
+                "report": report,
+                "default_public_base_url": public_base_url or str(request.base_url).rstrip("/"),
+                "error": error,
+            },
+        )
+
+    @app.post("/github/setup/register", response_class=HTMLResponse)
+    async def github_setup_register(
+        request: Request,
+        public_base_url: str = Form(...),
+        account_type: str = Form("personal"),
+        owner: str | None = Form(default=None),
+        app_name: str = Form("Glasswall Patch Gap Ops"),
+        public_app: bool = Form(default=False),
+    ) -> HTMLResponse:
+        try:
+            launch = setup_service.create_launch(
+                public_base_url=public_base_url,
+                account_type=account_type,
+                owner=owner,
+                app_name=app_name,
+                public_app=public_app,
+            )
+        except ValueError as exc:
+            report = setup_service.build_report(public_base_url=None)
+            return TEMPLATES.TemplateResponse(
+                request=request,
+                name="github_setup.html",
+                context={
+                    "github_status": github_status,
+                    "report": report,
+                    "default_public_base_url": public_base_url,
+                    "error": str(exc),
+                },
+                status_code=400,
+            )
+        return TEMPLATES.TemplateResponse(
+            request=request,
+            name="github_setup_launch.html",
+            context={
+                "launch": launch,
+            },
+        )
+
+    @app.get("/github/setup/callback", response_class=HTMLResponse)
+    async def github_setup_callback(
+        request: Request,
+        code: str | None = None,
+        state: str | None = None,
+    ) -> HTMLResponse:
+        if not code or not state:
+            return TEMPLATES.TemplateResponse(
+                request=request,
+                name="github_setup_complete.html",
+                context={
+                    "error": "Missing `code` or `state` in the GitHub manifest callback.",
+                    "credentials": None,
+                },
+                status_code=400,
+            )
+        try:
+            credentials = await setup_service.exchange_manifest_code(code, state)
+        except ValueError as exc:
+            return TEMPLATES.TemplateResponse(
+                request=request,
+                name="github_setup_complete.html",
+                context={
+                    "error": str(exc),
+                    "credentials": None,
+                },
+                status_code=400,
+            )
+        except httpx.HTTPError as exc:
+            return TEMPLATES.TemplateResponse(
+                request=request,
+                name="github_setup_complete.html",
+                context={
+                    "error": f"GitHub manifest exchange failed: {exc}",
+                    "credentials": None,
+                },
+                status_code=502,
+            )
+        return TEMPLATES.TemplateResponse(
+            request=request,
+            name="github_setup_complete.html",
+            context={
+                "error": None,
+                "credentials": credentials,
+            },
+        )
+
+    @app.get("/github/setup/complete", response_class=HTMLResponse)
+    async def github_setup_complete(
+        request: Request,
+        installation_id: str | None = None,
+        setup_action: str | None = None,
+    ) -> HTMLResponse:
+        return TEMPLATES.TemplateResponse(
+            request=request,
+            name="github_setup_complete.html",
+            context={
+                "error": None,
+                "credentials": None,
+                "installation_id": installation_id,
+                "setup_action": setup_action,
+                "github_status": github_status,
+            },
         )
 
     @app.post("/scan")

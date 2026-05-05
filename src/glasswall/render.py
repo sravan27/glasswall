@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from glasswall.analytics import FleetOverview, FleetScorecard, FleetSignal, TargetScorecard
+from glasswall.github_setup import GitHubSetupReport
 from glasswall.diffing import ScanDelta
 from glasswall.models import (
     Finding,
@@ -70,6 +71,14 @@ def render_showcase_output(bundle: ShowcaseBundle, output_format: str) -> str:
     if output_format == "markdown":
         return render_showcase_markdown(bundle)
     return render_showcase_summary(bundle)
+
+
+def render_github_setup_output(report: GitHubSetupReport, output_format: str) -> str:
+    if output_format == "json":
+        return json.dumps(report.to_dict(), indent=2)
+    if output_format == "markdown":
+        return render_github_setup_markdown(report)
+    return render_github_setup_summary(report)
 
 
 def write_output(text: str, output_path: str | None) -> None:
@@ -383,6 +392,42 @@ def render_scorecard_markdown(scorecard: FleetScorecard) -> str:
         lines.extend(["", "## Target grades"])
         for target in scorecard.targets:
             lines.append(_scorecard_target_summary_line(target))
+    return "\n".join(lines)
+
+
+def render_github_setup_summary(report: GitHubSetupReport) -> str:
+    lines = [
+        "GitHub App setup",
+        f"Public base URL: {report.public_base_url or 'missing'}",
+        f"Registration target: {report.account_type}{f'/{report.owner}' if report.owner else ''}",
+        f"Action URL: {report.action_url or 'unavailable'}",
+        f"Webhook URL: {report.webhook_url or 'unavailable'}",
+    ]
+    if report.checks:
+        lines.extend(["", "Checks:"])
+        for check in report.checks:
+            status = "ok" if check.ok else check.severity
+            lines.append(f"- {check.name}: {status} - {check.detail}")
+    return "\n".join(lines)
+
+
+def render_github_setup_markdown(report: GitHubSetupReport) -> str:
+    lines = [
+        "# Glasswall GitHub App Setup",
+        "",
+        f"- Public base URL: `{report.public_base_url or 'missing'}`",
+        f"- Registration target: `{report.account_type}{f'/{report.owner}' if report.owner else ''}`",
+        f"- Action URL: `{report.action_url or 'unavailable'}`",
+        f"- Webhook URL: `{report.webhook_url or 'unavailable'}`",
+    ]
+    if report.manifest is not None:
+        lines.extend(["", "## Manifest preview", "```json", json.dumps(report.manifest, indent=2), "```"])
+    if report.checks:
+        lines.extend(["", "## Checks"])
+        for check in report.checks:
+            status = "ok" if check.ok else check.severity
+            lines.append(f"- **{check.name}**: `{status}` {check.detail}")
+    lines.extend(["", "## Environment template", "```dotenv", report.env_template, "```"])
     return "\n".join(lines)
 
 

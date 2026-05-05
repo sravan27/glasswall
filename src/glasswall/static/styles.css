@@ -212,6 +212,29 @@ code {
   transform: translateY(-1px);
 }
 
+.field select {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 253, 247, 0.96);
+  padding: 0.95rem 1rem;
+  font: inherit;
+  color: var(--ink);
+}
+
+.checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  color: var(--muted);
+}
+
+.checkbox-row input {
+  width: 1rem;
+  height: 1rem;
+}
+
 .action-row {
   display: flex;
   align-items: center;
@@ -235,6 +258,18 @@ code {
 
 .action-row button:hover {
   transform: translateY(-1px);
+}
+
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(21, 76, 87, 0.08);
+  color: var(--teal);
+  padding: 0.82rem 1.1rem;
+  text-decoration: none;
+  font-weight: 700;
 }
 
 .form-note,
@@ -463,6 +498,32 @@ code {
 .panel {
   padding: 1.2rem;
   border-radius: var(--radius-lg);
+}
+
+.setup-code {
+  margin: 0.95rem 0 0;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(21, 76, 87, 0.08);
+  overflow-x: auto;
+}
+
+.setup-textarea {
+  width: 100%;
+  min-height: 14rem;
+  margin-top: 0.95rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: rgba(255, 253, 247, 0.96);
+  padding: 1rem;
+  font: inherit;
+  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.setup-textarea-large {
+  min-height: 22rem;
 }
 
 .panel-emphasis {

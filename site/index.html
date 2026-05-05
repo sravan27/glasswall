@@ -151,7 +151,7 @@
           </article>
           <article class="step">
             <strong>3. GitHub App mode</strong>
-            <p>Comment on pull requests, scan fork-safe heads, and open remediation branches from default-branch push events.</p>
+            <p>Use the manifest-driven `/github/setup` flow, then comment on pull requests, scan fork-safe heads, and open remediation branches from default-branch push events.</p>
           </article>
           <article class="step">
             <strong>4. Pressure board</strong>
@@ -163,7 +163,10 @@
       <section class="launch-grid">
         <article class="panel launch">
           <p class="card-label">Run the demo yourself</p>
-          <pre><code>glasswall showcase \
+          <pre><code>glasswall serve --host 0.0.0.0 --port 8080
+open /github/setup
+
+glasswall showcase \
   examples/showcase/python-legacy \
   examples/showcase/npm-legacy \
   --format markdown</code></pre>

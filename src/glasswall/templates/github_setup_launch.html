@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Launching GitHub App Registration</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="first-run">
+        <article class="empty-state">
+          <p class="eyebrow">Glasswall / GitHub App Setup</p>
+          <h2>Launching GitHub registration now.</h2>
+          <p>
+            GitHub should open the manifest registration screen automatically. If it does not, use the button below.
+          </p>
+          <form id="manifest-launch" action="{{ launch.action_url }}" method="post">
+            <input type="hidden" name="manifest" value="{{ launch.manifest_json }}" />
+            <button type="submit">Open GitHub registration</button>
+          </form>
+          <p class="panel-copy">
+            This launch token expires at <code>{{ launch.expires_at }}</code>. Keep this Glasswall process alive until
+            GitHub redirects back to <code>{{ launch.report.redirect_url }}</code>.
+          </p>
+        </article>
+      </section>
+    </main>
+    <script>
+      document.getElementById("manifest-launch").submit();
+    </script>
+  </body>
+</html>

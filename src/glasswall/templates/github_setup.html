@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Glasswall GitHub Setup</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="masthead">
+        <div class="hero-card">
+          <p class="eyebrow">Glasswall / GitHub App Setup</p>
+          <h1 class="hero-title">Turn the repo into a real GitHub-native service.</h1>
+          <p class="hero-copy">
+            This flow generates the manifest GitHub needs, launches the registration screen, receives the one-time
+            callback, and hands you a copyable credential bundle for Glasswall.
+          </p>
+
+          <form action="/github/setup/register" method="post" class="scan-form">
+            <div class="field-grid">
+              <label class="field" for="public_base_url">
+                <span>Public base URL</span>
+                <input
+                  id="public_base_url"
+                  name="public_base_url"
+                  type="text"
+                  value="{{ report.public_base_url or default_public_base_url }}"
+                  placeholder="https://your-public-glasswall-url"
+                  required
+                />
+              </label>
+              <label class="field" for="app_name">
+                <span>GitHub App name</span>
+                <input id="app_name" name="app_name" type="text" value="{{ report.app_name }}" required />
+              </label>
+              <label class="field" for="account_type">
+                <span>Register on</span>
+                <select id="account_type" name="account_type">
+                  <option value="personal" {% if report.account_type == "personal" %}selected{% endif %}>Personal account</option>
+                  <option value="organization" {% if report.account_type == "organization" %}selected{% endif %}>Organization</option>
+                </select>
+              </label>
+              <label class="field" for="owner">
+                <span>Organization slug (optional)</span>
+                <input id="owner" name="owner" type="text" value="{{ report.owner or '' }}" placeholder="my-org" />
+              </label>
+            </div>
+            <label class="checkbox-row">
+              <input type="checkbox" name="public_app" value="true" {% if report.public_app %}checked{% endif %} />
+              <span>Register as a public GitHub App</span>
+            </label>
+            <div class="action-row">
+              <button type="submit">Continue to GitHub registration</button>
+              <p class="form-note">
+                Keep this Glasswall process running and make sure the public base URL resolves back to it for the callback.
+              </p>
+            </div>
+          </form>
+
+          {% if error %}
+          <p class="alert">{{ error }}</p>
+          {% endif %}
+        </div>
+
+        <aside class="status-card">
+          <div class="status-head">
+            <div>
+              <p class="eyebrow">Current posture</p>
+              <h2>{{ github_status.mode }}</h2>
+            </div>
+            <span class="state-pill {% if github_status.configured %}state-pill-armed{% else %}state-pill-local{% endif %}">
+              {{ "configured" if github_status.configured else "needs setup" }}
+            </span>
+          </div>
+          <p class="panel-copy">{{ github_status.summary }}</p>
+          <div class="status-grid">
+            {% for check in report.checks %}
+            <div class="status-item">
+              <span>{{ check.name }}</span>
+              <strong>{{ "ok" if check.ok else check.severity }}</strong>
+            </div>
+            {% endfor %}
+          </div>
+        </aside>
+      </section>
+
+      <section class="signal-grid">
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Checklist</p>
+              <h2>What Glasswall needs before GitHub can talk to it.</h2>
+            </div>
+          </div>
+          <ul class="mini-list">
+            {% for check in report.checks %}
+            <li>
+              <strong>{{ check.name }}:</strong> {{ check.detail }}
+            </li>
+            {% endfor %}
+          </ul>
+        </article>
+
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Manifest preview</p>
+              <h2>The exact app registration payload Glasswall will send.</h2>
+            </div>
+          </div>
+          {% if report.manifest %}
+          <pre class="setup-code"><code>{{ report.manifest | tojson(indent=2) }}</code></pre>
+          {% else %}
+          <p class="panel-copy">Provide a valid public base URL to preview the manifest payload.</p>
+          {% endif %}
+        </article>
+
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Environment template</p>
+              <h2>What you will fill in after GitHub returns credentials.</h2>
+            </div>
+          </div>
+          <pre class="setup-code"><code>{{ report.env_template }}</code></pre>
+          {% if report.webhook_url %}
+          <p class="panel-copy">Webhook URL: <code>{{ report.webhook_url }}</code></p>
+          {% endif %}
+          {% if report.setup_url %}
+          <p class="panel-copy">Post-install landing URL: <code>{{ report.setup_url }}</code></p>
+          {% endif %}
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

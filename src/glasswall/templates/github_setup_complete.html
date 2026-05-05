@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Glasswall GitHub App Credentials</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      {% if error %}
+      <section class="first-run">
+        <article class="empty-state">
+          <p class="eyebrow">Glasswall / GitHub App Setup</p>
+          <h2>Setup hit a wall.</h2>
+          <p>{{ error }}</p>
+          <p><a href="/github/setup">Go back to setup</a></p>
+        </article>
+      </section>
+      {% elif credentials %}
+      <section class="masthead">
+        <div class="hero-card">
+          <p class="eyebrow">Glasswall / GitHub App Setup</p>
+          <h1 class="hero-title">The GitHub App is real now.</h1>
+          <p class="hero-copy">
+            GitHub returned the app credentials. Copy them into your Glasswall runtime, then install the app on the
+            repositories you want it to watch.
+          </p>
+          <div class="status-grid">
+            <div class="status-item">
+              <span>App ID</span>
+              <strong>{{ credentials.app_id }}</strong>
+            </div>
+            <div class="status-item">
+              <span>App slug</span>
+              <strong>{{ credentials.app_slug or "n/a" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Owner</span>
+              <strong>{{ credentials.owner_login or "n/a" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Webhook secret</span>
+              <strong>issued</strong>
+            </div>
+          </div>
+          <div class="hero-actions">
+            {% if credentials.html_url %}
+            <a class="button button-primary" href="{{ credentials.html_url }}">Open app settings</a>
+            {% endif %}
+            {% if credentials.install_url %}
+            <a class="button" href="{{ credentials.install_url }}">Install app</a>
+            {% endif %}
+            <a class="button" href="/github/setup">Back to setup</a>
+          </div>
+        </div>
+
+        <aside class="status-card">
+          <div class="status-head">
+            <div>
+              <p class="eyebrow">Next steps</p>
+              <h2>Finish the first real install.</h2>
+            </div>
+          </div>
+          <ol class="mini-list">
+            <li>Copy the `.env` snippet or shell exports into the Glasswall runtime that serves `/github/webhooks`.</li>
+            <li>Restart Glasswall with those environment variables loaded.</li>
+            <li>Install the app on the target repository or organization.</li>
+            <li>Open a pull request or push to the default branch to verify comments and remediation flow.</li>
+          </ol>
+        </aside>
+      </section>
+
+      <section class="signal-grid">
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">.env snippet</p>
+              <h2>Copy this into your Glasswall environment.</h2>
+            </div>
+          </div>
+          <textarea class="setup-textarea" readonly>{{ credentials.env_snippet }}</textarea>
+        </article>
+
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Shell exports</p>
+              <h2>Use this when launching Glasswall from a terminal.</h2>
+            </div>
+          </div>
+          <textarea class="setup-textarea" readonly>{{ credentials.shell_exports }}</textarea>
+        </article>
+
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Private key PEM</p>
+              <h2>Keep this secure.</h2>
+            </div>
+          </div>
+          <textarea class="setup-textarea setup-textarea-large" readonly>{{ credentials.pem }}</textarea>
+        </article>
+      </section>
+      {% else %}
+      <section class="first-run">
+        <article class="empty-state">
+          <p class="eyebrow">Glasswall / GitHub App Setup</p>
+          <h2>Installation handoff complete.</h2>
+          <p>
+            {% if installation_id %}
+            GitHub reported installation <code>{{ installation_id }}</code>{% if setup_action %} with action <code>{{ setup_action }}</code>{% endif %}.
+            {% else %}
+            GitHub redirected here after installation.
+            {% endif %}
+          </p>
+          <p>
+            If Glasswall is already configured with the app credentials, you can now send pull request and push events to
+            <code>/github/webhooks</code>. If not, go back through the manifest flow first so Glasswall can receive the generated keys.
+          </p>
+          <p><a href="/github/setup">Return to GitHub setup</a></p>
+        </article>
+      </section>
+      {% endif %}
+    </main>
+  </body>
+</html>

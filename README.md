@@ -76,6 +76,7 @@ glasswall scan /path/to/repo --format sarif --output reports/glasswall.sarif
 glasswall showcase examples/showcase/python-legacy examples/showcase/npm-legacy --format markdown
 glasswall fleet --format summary
 glasswall scorecard --format markdown
+glasswall github-setup --public-base-url https://glasswall.example.com --account-type personal
 glasswall history /path/to/repo
 glasswall serve --host 127.0.0.1 --port 8080
 ```
@@ -95,6 +96,7 @@ glasswall remediate /path/to/repo --apply --max-upgrades 3 --format markdown
 glasswall showcase examples/showcase/python-legacy examples/showcase/npm-legacy --format json --output site/demo.json
 glasswall fleet --format markdown
 glasswall scorecard --format json
+glasswall github-setup --public-base-url https://glasswall.example.com --format markdown
 glasswall scan /path/to/repo --policy .glasswall.yml --format summary
 glasswall history /path/to/repo --limit 20
 glasswall serve
@@ -115,6 +117,8 @@ glasswall serve
 `glasswall fleet` turns scan history into a pressure board. It aggregates current urgent exposure across targets, computes resolved patch-gap MTTP from findings that were resolved after entering a patch-gap window, and highlights what just became dangerous between each target's latest two scans.
 
 `glasswall scorecard` sits one layer above `fleet`. It turns those same histories into grades and trend labels so teams can tell whether they are hardening, holding, or backsliding without reading every raw metric first.
+
+`glasswall github-setup` previews the GitHub App onboarding manifest, webhook/callback URLs, and runtime checks before you ever leave the terminal.
 
 ## Live showcase
 
@@ -203,6 +207,27 @@ Current behavior:
 - scans the PR head commit, including forked pull requests
 - renders a remediation-first comment and updates it in place by default
 - can open or update a remediation PR from `push` events on the default branch when auto-PR mode is enabled
+- includes a local manifest-driven onboarding flow at `/github/setup` that can create the GitHub App registration payload, receive the callback, and render copyable credentials
+
+### GitHub App setup flow
+
+If you want Glasswall to create the GitHub App registration payload for you:
+
+1. Expose your Glasswall server at a public HTTPS URL.
+2. Run `glasswall serve --host 0.0.0.0 --port 8080`.
+3. Open `/github/setup` in that running app.
+4. Complete the manifest-driven GitHub registration flow.
+5. Copy the returned `.env` snippet into the Glasswall runtime and restart.
+
+You can preview the same manifest and checklist from the CLI:
+
+```bash
+glasswall github-setup \
+  --public-base-url https://glasswall.example.com \
+  --account-type organization \
+  --owner your-org \
+  --format markdown
+```
 
 Required environment:
 
