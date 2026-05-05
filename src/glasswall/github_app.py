@@ -74,6 +74,52 @@ class GitHubAppClient:
         self.settings = settings
         self.auth = GitHubAppAuth(settings)
 
+    async def get_authenticated_app(self) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
+            response = await client.get(
+                f"{self.settings.github_api_base_url}/app",
+                headers=self._app_headers(),
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def get_webhook_config(self) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
+            response = await client.get(
+                f"{self.settings.github_api_base_url}/app/hook/config",
+                headers=self._app_headers(),
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def list_installations(self, *, per_page: int = 100) -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
+            response = await client.get(
+                f"{self.settings.github_api_base_url}/app/installations",
+                headers=self._app_headers(),
+                params={"per_page": per_page},
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def list_webhook_deliveries(
+        self,
+        *,
+        per_page: int = 30,
+        status: str | None = None,
+    ) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"per_page": per_page}
+        if status:
+            params["status"] = status
+        async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
+            response = await client.get(
+                f"{self.settings.github_api_base_url}/app/hook/deliveries",
+                headers=self._app_headers(),
+                params=params,
+            )
+            response.raise_for_status()
+            return response.json()
+
     async def create_installation_client(self, installation_id: int) -> "GitHubInstallationClient":
         async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
             response = await client.post(
@@ -116,6 +162,17 @@ class GitHubInstallationClient:
         url = f"{self.settings.github_api_base_url}/repos/{owner}/{repo}/issues/{issue_number}/comments"
         async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
             response = await client.get(url, headers=self._installation_headers(), params={"per_page": 100})
+            response.raise_for_status()
+            return response.json()
+
+    async def list_repositories(self, *, per_page: int = 100) -> dict[str, Any]:
+        url = f"{self.settings.github_api_base_url}/installation/repositories"
+        async with httpx.AsyncClient(timeout=self.settings.request_timeout_seconds) as client:
+            response = await client.get(
+                url,
+                headers=self._installation_headers(),
+                params={"per_page": per_page},
+            )
             response.raise_for_status()
             return response.json()
 

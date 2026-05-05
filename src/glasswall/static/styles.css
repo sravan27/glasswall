@@ -242,6 +242,33 @@ code {
   margin-top: 0.9rem;
 }
 
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1.2rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(21, 76, 87, 0.12);
+  background: rgba(255, 252, 246, 0.82);
+  color: var(--ink);
+  padding: 0.82rem 1.1rem;
+  text-decoration: none;
+  font-weight: 700;
+  box-shadow: 0 10px 26px rgba(42, 33, 22, 0.08);
+}
+
+.button-primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--teal), #266877);
+  color: #fff9f1;
+}
+
 .action-row button {
   border: none;
   border-radius: 999px;
@@ -567,6 +594,10 @@ code {
 .rationale {
   margin: 0.9rem 0 0;
   padding-left: 1.15rem;
+}
+
+.mini-list-tight {
+  margin-top: 0.6rem;
 }
 
 .mini-list li + li,

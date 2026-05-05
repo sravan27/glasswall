@@ -7,6 +7,7 @@ from typing import Any
 
 from glasswall.analytics import FleetOverview, FleetScorecard, FleetSignal, TargetScorecard
 from glasswall.github_setup import GitHubSetupReport
+from glasswall.github_doctor import GitHubDoctorReport
 from glasswall.diffing import ScanDelta
 from glasswall.models import (
     Finding,
@@ -79,6 +80,14 @@ def render_github_setup_output(report: GitHubSetupReport, output_format: str) ->
     if output_format == "markdown":
         return render_github_setup_markdown(report)
     return render_github_setup_summary(report)
+
+
+def render_github_doctor_output(report: GitHubDoctorReport, output_format: str) -> str:
+    if output_format == "json":
+        return json.dumps(report.to_dict(), indent=2)
+    if output_format == "markdown":
+        return render_github_doctor_markdown(report)
+    return render_github_doctor_summary(report)
 
 
 def write_output(text: str, output_path: str | None) -> None:
@@ -428,6 +437,109 @@ def render_github_setup_markdown(report: GitHubSetupReport) -> str:
             status = "ok" if check.ok else check.severity
             lines.append(f"- **{check.name}**: `{status}` {check.detail}")
     lines.extend(["", "## Environment template", "```dotenv", report.env_template, "```"])
+    return "\n".join(lines)
+
+
+def render_github_doctor_summary(report: GitHubDoctorReport) -> str:
+    lines = [
+        "GitHub App doctor",
+        f"Generated: {report.generated_at}",
+        f"Configured: {'yes' if report.configured else 'no'}",
+        f"Summary: {report.summary}",
+        f"Installations: {report.total_installation_count}",
+        f"Repositories: {report.total_repository_count}",
+        f"Recent deliveries: {len(report.recent_deliveries)}",
+    ]
+    if report.app is not None:
+        lines.append(f"App: {report.app.slug or report.app.name or report.app.app_id}")
+    if report.webhook is not None:
+        lines.append(f"Webhook URL: {report.webhook.url or 'missing'}")
+    if report.checks:
+        lines.extend(["", "Checks:"])
+        for check in report.checks:
+            status = "ok" if check.ok else check.severity
+            lines.append(f"- {check.name}: {status} - {check.detail}")
+    if report.installations:
+        lines.extend(["", "Installations:"])
+        for installation in report.installations:
+            status = "ok"
+            if installation.error or installation.missing_events or installation.permission_gaps:
+                status = "warning"
+            lines.append(
+                f"- {installation.account_login or installation.installation_id}: {status} "
+                f"repos={installation.repository_count} selection={installation.repository_selection}"
+            )
+    if report.recent_deliveries:
+        lines.extend(["", "Recent deliveries:"])
+        for delivery in report.recent_deliveries[:5]:
+            lines.append(
+                f"- #{delivery.delivery_id} {delivery.event}"
+                f"{f'/{delivery.action}' if delivery.action else ''} "
+                f"status={delivery.status_code or 'unknown'} at {delivery.delivered_at or 'unknown'}"
+            )
+    return "\n".join(lines)
+
+
+def render_github_doctor_markdown(report: GitHubDoctorReport) -> str:
+    lines = [
+        "# Glasswall GitHub App Doctor",
+        "",
+        f"- Generated: `{report.generated_at}`",
+        f"- Configured: `{'yes' if report.configured else 'no'}`",
+        f"- Summary: `{report.summary}`",
+        f"- Installations: `{report.total_installation_count}`",
+        f"- Repositories: `{report.total_repository_count}`",
+        f"- Recent deliveries: `{len(report.recent_deliveries)}`",
+    ]
+    if report.expected_public_base_url:
+        lines.append(f"- Expected public base URL: `{report.expected_public_base_url}`")
+    if report.app is not None:
+        lines.extend(
+            [
+                "",
+                "## App",
+                f"- App: `{report.app.slug or report.app.name or report.app.app_id}`",
+                f"- Install URL: `{report.app.install_url or 'n/a'}`",
+                f"- Settings URL: `{report.app.html_url or 'n/a'}`",
+            ]
+        )
+    if report.webhook is not None:
+        lines.extend(
+            [
+                "",
+                "## Webhook",
+                f"- URL: `{report.webhook.url or 'missing'}`",
+                f"- Content type: `{report.webhook.content_type or 'unknown'}`",
+                f"- Recent successes: `{report.webhook.recent_success_count}`",
+                f"- Recent failures: `{report.webhook.recent_failure_count}`",
+            ]
+        )
+    if report.checks:
+        lines.extend(["", "## Checks"])
+        for check in report.checks:
+            status = "ok" if check.ok else check.severity
+            lines.append(f"- **{check.name}**: `{status}` {check.detail}")
+    if report.installations:
+        lines.extend(["", "## Installations"])
+        for installation in report.installations:
+            lines.append(
+                f"- `{installation.account_login or installation.installation_id}` "
+                f"repos=`{installation.repository_count}` selection=`{installation.repository_selection}`"
+            )
+            if installation.missing_events:
+                lines.append(f"  missing-events=`{', '.join(installation.missing_events)}`")
+            if installation.permission_gaps:
+                lines.append(f"  permission-gaps=`{', '.join(installation.permission_gaps)}`")
+            if installation.error:
+                lines.append(f"  error=`{installation.error}`")
+    if report.recent_deliveries:
+        lines.extend(["", "## Recent deliveries"])
+        for delivery in report.recent_deliveries:
+            lines.append(
+                f"- `#{delivery.delivery_id}` `{delivery.event}`"
+                f"{f'/{delivery.action}' if delivery.action else ''} "
+                f"status=`{delivery.status_code or 'unknown'}` at `{delivery.delivered_at or 'unknown'}`"
+            )
     return "\n".join(lines)
 
 

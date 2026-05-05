@@ -43,6 +43,7 @@ def test_build_report_includes_manifest_preview_and_urls(tmp_path) -> None:
     assert report.manifest is not None
     assert report.manifest["default_permissions"]["contents"] == "write"
     assert report.manifest["default_events"] == ["pull_request", "push"]
+    assert 'GLASSWALL_PUBLIC_BASE_URL="https://your-public-glasswall-url"' in report.env_template
 
 
 def test_create_launch_generates_stateful_action_url(tmp_path) -> None:

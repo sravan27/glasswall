@@ -10,11 +10,13 @@ import uvicorn
 
 from glasswall.analytics import build_fleet_overview, build_fleet_scorecard
 from glasswall.diffing import build_scan_delta
+from glasswall.github_doctor import GitHubDoctorService
 from glasswall.github_setup import GitHubSetupService
 from glasswall.models import ScanOverview, urgency_rank
 from glasswall.policy import load_scan_policy
 from glasswall.render import (
     render_fleet_output,
+    render_github_doctor_output,
     render_github_setup_output,
     render_plan_output,
     render_remediation_output,
@@ -60,6 +62,10 @@ def build_parser() -> argparse.ArgumentParser:
     github_setup_parser.add_argument("--public-app", action="store_true")
     github_setup_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
     github_setup_parser.add_argument("--output", help="Optional file path for rendered output")
+
+    github_doctor_parser = subparsers.add_parser("github-doctor", help="Verify live GitHub App readiness and webhook health")
+    github_doctor_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
+    github_doctor_parser.add_argument("--output", help="Optional file path for rendered output")
 
     plan_parser = subparsers.add_parser("plan", help="Build a remediation plan for a repository path")
     plan_parser.add_argument("path", help="Local repository path to plan")
@@ -172,6 +178,14 @@ def run_github_setup(
     return 0
 
 
+async def run_github_doctor(output_format: str, output_path: str | None) -> int:
+    settings = load_settings()
+    doctor = GitHubDoctorService(settings=settings)
+    report = await doctor.diagnose()
+    write_output(render_github_doctor_output(report, output_format), output_path)
+    return 0
+
+
 async def run_plan(target_path: str, output_format: str, output_path: str | None, policy_path: str | None) -> int:
     settings = load_settings()
     service = GlasswallService(settings=settings)
@@ -275,6 +289,9 @@ def main() -> int:
             output_format=args.format,
             output_path=args.output,
         )
+
+    if args.command == "github-doctor":
+        return asyncio.run(run_github_doctor(args.format, args.output))
 
     if args.command == "plan":
         return asyncio.run(

@@ -237,8 +237,18 @@ class GitHubSetupService:
             webhook_secret=webhook_secret,
             pem=pem,
             install_url=install_url,
-            env_snippet=_env_snippet(app_id=app_id, webhook_secret=webhook_secret, pem=pem),
-            shell_exports=_shell_exports(app_id=app_id, webhook_secret=webhook_secret, pem=pem),
+            env_snippet=_env_snippet(
+                app_id=app_id,
+                webhook_secret=webhook_secret,
+                pem=pem,
+                public_base_url=setup_state.report.public_base_url,
+            ),
+            shell_exports=_shell_exports(
+                app_id=app_id,
+                webhook_secret=webhook_secret,
+                pem=pem,
+                public_base_url=setup_state.report.public_base_url,
+            ),
             report=setup_state.report,
         )
 
@@ -390,8 +400,9 @@ def _build_action_url(account_type: str, owner: str | None) -> str:
 
 
 def _env_template() -> str:
-    return "\n".join(
+    return _join_non_empty(
         [
+            'GLASSWALL_PUBLIC_BASE_URL="https://your-public-glasswall-url"',
             'GLASSWALL_GITHUB_APP_ID="your-app-id"',
             'GLASSWALL_GITHUB_WEBHOOK_SECRET="your-webhook-secret"',
             'GLASSWALL_GITHUB_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n"',
@@ -401,10 +412,11 @@ def _env_template() -> str:
     )
 
 
-def _env_snippet(*, app_id: str, webhook_secret: str, pem: str) -> str:
+def _env_snippet(*, app_id: str, webhook_secret: str, pem: str, public_base_url: str | None) -> str:
     escaped_pem = pem.replace("\\", "\\\\").replace("\n", "\\n")
-    return "\n".join(
+    return _join_non_empty(
         [
+            f'GLASSWALL_PUBLIC_BASE_URL="{public_base_url}"' if public_base_url else None,
             f'GLASSWALL_GITHUB_APP_ID="{app_id}"',
             f'GLASSWALL_GITHUB_WEBHOOK_SECRET="{webhook_secret}"',
             f'GLASSWALL_GITHUB_PRIVATE_KEY="{escaped_pem}"',
@@ -412,9 +424,10 @@ def _env_snippet(*, app_id: str, webhook_secret: str, pem: str) -> str:
     )
 
 
-def _shell_exports(*, app_id: str, webhook_secret: str, pem: str) -> str:
-    return "\n".join(
+def _shell_exports(*, app_id: str, webhook_secret: str, pem: str, public_base_url: str | None) -> str:
+    return _join_non_empty(
         [
+            f'export GLASSWALL_PUBLIC_BASE_URL="{public_base_url}"' if public_base_url else None,
             f'export GLASSWALL_GITHUB_APP_ID="{app_id}"',
             f'export GLASSWALL_GITHUB_WEBHOOK_SECRET="{webhook_secret}"',
             "export GLASSWALL_GITHUB_PRIVATE_KEY=\"$(cat <<'EOF'",
@@ -423,6 +436,10 @@ def _shell_exports(*, app_id: str, webhook_secret: str, pem: str) -> str:
             ')\"',
         ]
     )
+
+
+def _join_non_empty(lines: list[str | None]) -> str:
+    return "\n".join(line for line in lines if line)
 
 
 def _optional_str(value: Any) -> str | None:

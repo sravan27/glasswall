@@ -5,6 +5,13 @@ import json
 from fastapi.testclient import TestClient
 
 from glasswall.app import create_app
+from glasswall.github_doctor import (
+    GitHubDoctorApp,
+    GitHubDoctorCheck,
+    GitHubDoctorDelivery,
+    GitHubDoctorReport,
+    GitHubDoctorWebhook,
+)
 from glasswall.github_setup import GitHubAppCredentials, GitHubSetupCheck, GitHubSetupReport
 from glasswall.models import Dependency, Finding, RemediationFileChange, RemediationRun, ScanResult, Vulnerability
 from glasswall.settings import Settings
@@ -390,3 +397,81 @@ def test_github_setup_callback_renders_credentials_from_stub_service(tmp_path) -
     assert response.status_code == 200
     assert "The GitHub App is real now." in response.text
     assert "GLASSWALL_GITHUB_APP_ID=&#34;123&#34;" in response.text
+
+
+def test_github_doctor_api_returns_live_diagnostics(tmp_path) -> None:
+    class StubDoctorService:
+        async def diagnose(self):
+            return GitHubDoctorReport(
+                generated_at="2026-05-05T11:00:00+00:00",
+                configured=True,
+                summary="GitHub App mode is alive.",
+                expected_public_base_url="https://glasswall.example.com",
+                app=GitHubDoctorApp(
+                    app_id="123",
+                    name="Glasswall",
+                    slug="glasswall",
+                    description="Patch-gap operations",
+                    html_url="https://github.com/settings/apps/glasswall",
+                    external_url="https://glasswall.example.com",
+                    install_url="https://github.com/apps/glasswall/installations/new",
+                    installations_count=1,
+                ),
+                webhook=GitHubDoctorWebhook(
+                    url="https://glasswall.example.com/github/webhooks",
+                    content_type="json",
+                    insecure_ssl="0",
+                    recent_delivery_count=1,
+                    recent_success_count=1,
+                    recent_failure_count=0,
+                    last_delivery_at="2026-05-05T11:00:00Z",
+                ),
+                checks=(GitHubDoctorCheck(name="Webhook URL", ok=True, detail="ok"),),
+                installations=(),
+                recent_deliveries=(
+                    GitHubDoctorDelivery(
+                        delivery_id=7,
+                        event="pull_request",
+                        action="opened",
+                        status="OK",
+                        status_code=200,
+                        delivered_at="2026-05-05T11:00:00Z",
+                        duration_seconds=0.18,
+                        redelivery=False,
+                        installation_id=99,
+                        repository_id=1001,
+                    ),
+                ),
+                total_installation_count=1,
+                total_repository_count=2,
+            )
+
+    settings = Settings(
+        db_path=str(tmp_path / "glasswall.db"),
+        cache_dir=str(tmp_path / "cache"),
+        request_timeout_seconds=5,
+        osv_query_ttl_seconds=10,
+        osv_vuln_ttl_seconds=10,
+        kev_ttl_seconds=10,
+        max_concurrent_detail_requests=2,
+        github_app_id=None,
+        github_private_key=None,
+        github_webhook_secret=None,
+        github_api_base_url="https://api.github.com",
+        github_api_version="2026-03-10",
+        github_comment_mode="off",
+        github_auto_pr_mode="off",
+        github_auto_pr_branch="glasswall/remediation",
+        github_auto_pr_max_upgrades=3,
+        github_auto_pr_commit_message="glasswall remediation",
+        github_auto_pr_title="[glasswall] apply top supported patch-gap remediation",
+    )
+    client = TestClient(create_app(settings=settings, doctor_service=StubDoctorService()))
+
+    response = client.get("/api/github/doctor")
+
+    assert response.status_code == 200
+    payload = response.json()["doctor"]
+    assert payload["summary"] == "GitHub App mode is alive."
+    assert payload["app"]["slug"] == "glasswall"
+    assert payload["recent_deliveries"][0]["status_code"] == 200

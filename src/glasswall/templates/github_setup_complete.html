@@ -51,6 +51,7 @@
             {% if credentials.install_url %}
             <a class="button" href="{{ credentials.install_url }}">Install app</a>
             {% endif %}
+            <a class="button" href="/github/doctor">Run GitHub doctor</a>
             <a class="button" href="/github/setup">Back to setup</a>
           </div>
         </div>
@@ -118,7 +119,7 @@
             If Glasswall is already configured with the app credentials, you can now send pull request and push events to
             <code>/github/webhooks</code>. If not, go back through the manifest flow first so Glasswall can receive the generated keys.
           </p>
-          <p><a href="/github/setup">Return to GitHub setup</a></p>
+          <p><a href="/github/doctor">Run GitHub doctor</a> or <a href="/github/setup">return to GitHub setup</a>.</p>
         </article>
       </section>
       {% endif %}

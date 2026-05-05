@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from glasswall.analytics import FleetOverview, FleetScorecard, build_fleet_overview, build_fleet_scorecard
 from glasswall.diffing import build_scan_delta
 from glasswall.github_app import GitHubWebhookVerifier
+from glasswall.github_doctor import GitHubDoctorService
 from glasswall.github_setup import GitHubSetupService
 from glasswall.github_webhooks import GitHubWebhookProcessor
 from glasswall.models import Finding, RemediationPlan, ScanResult
@@ -42,6 +43,7 @@ def create_app(
     database: Database | None = None,
     webhook_processor: GitHubWebhookProcessor | None = None,
     setup_service: GitHubSetupService | None = None,
+    doctor_service: GitHubDoctorService | None = None,
 ) -> FastAPI:
     settings = settings or load_settings()
     app = FastAPI(title="Glasswall", version="0.4.0")
@@ -50,6 +52,7 @@ def create_app(
     database = database or Database(settings.db_path)
     service = service or GlasswallService(settings=settings)
     setup_service = setup_service or GitHubSetupService(settings=settings)
+    doctor_service = doctor_service or GitHubDoctorService(settings=settings)
     github_status = _github_status(settings)
     github_verifier = GitHubWebhookVerifier(settings.github_webhook_secret) if settings.github_webhook_secret else None
     github_processor = webhook_processor
@@ -83,6 +86,11 @@ def create_app(
         except ValueError as exc:
             return JSONResponse({"detail": str(exc)}, status_code=400)
         return JSONResponse({"setup": report.to_dict()})
+
+    @app.get("/api/github/doctor")
+    async def github_doctor_report() -> JSONResponse:
+        report = await doctor_service.diagnose()
+        return JSONResponse({"doctor": report.to_dict()})
 
     @app.get("/api/fleet")
     async def fleet_overview() -> JSONResponse:
@@ -274,6 +282,18 @@ def create_app(
                 "report": report,
                 "default_public_base_url": public_base_url or str(request.base_url).rstrip("/"),
                 "error": error,
+            },
+        )
+
+    @app.get("/github/doctor", response_class=HTMLResponse)
+    async def github_doctor(request: Request) -> HTMLResponse:
+        report = await doctor_service.diagnose()
+        return TEMPLATES.TemplateResponse(
+            request=request,
+            name="github_doctor.html",
+            context={
+                "doctor": report,
+                "github_status": github_status,
             },
         )
 

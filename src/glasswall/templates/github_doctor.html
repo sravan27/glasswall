@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Glasswall GitHub Doctor</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="masthead">
+        <div class="hero-card">
+          <p class="eyebrow">Glasswall / GitHub App Doctor</p>
+          <h1 class="hero-title">Know if GitHub App mode is actually alive.</h1>
+          <p class="hero-copy">{{ doctor.summary }}</p>
+
+          <div class="status-grid">
+            <div class="status-item">
+              <span>Configured</span>
+              <strong>{{ "yes" if doctor.configured else "no" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Installations</span>
+              <strong>{{ doctor.total_installation_count }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Repositories</span>
+              <strong>{{ doctor.total_repository_count }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Recent deliveries</span>
+              <strong>{{ doctor.recent_deliveries | length }}</strong>
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            {% if doctor.app and doctor.app.html_url %}
+            <a class="button button-primary" href="{{ doctor.app.html_url }}">Open app settings</a>
+            {% endif %}
+            {% if doctor.app and doctor.app.install_url %}
+            <a class="button" href="{{ doctor.app.install_url }}">Install app</a>
+            {% endif %}
+            <a class="button" href="/github/setup">Setup flow</a>
+            <a class="button" href="/api/github/doctor">Doctor JSON</a>
+          </div>
+        </div>
+
+        <aside class="status-card">
+          <div class="status-head">
+            <div>
+              <p class="eyebrow">Live posture</p>
+              <h2>{{ github_status.mode }}</h2>
+            </div>
+            <span class="state-pill {% if doctor.configured %}state-pill-armed{% else %}state-pill-local{% endif %}">
+              {{ "live" if doctor.configured else "setup needed" }}
+            </span>
+          </div>
+          <p class="panel-copy">{{ github_status.summary }}</p>
+
+          <div class="status-grid">
+            <div class="status-item">
+              <span>App</span>
+              <strong>{{ doctor.app.slug if doctor.app and doctor.app.slug else "n/a" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Webhook URL</span>
+              <strong>{{ doctor.webhook.url if doctor.webhook and doctor.webhook.url else "missing" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Successes</span>
+              <strong>{{ doctor.webhook.recent_success_count if doctor.webhook else 0 }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Failures</span>
+              <strong>{{ doctor.webhook.recent_failure_count if doctor.webhook else 0 }}</strong>
+            </div>
+          </div>
+
+          <div class="command-deck">
+            <p class="panel-label">Operator deck</p>
+            <code>glasswall github-doctor --format markdown</code>
+            <code>GET /api/github/doctor</code>
+            <code>GET /github/doctor</code>
+          </div>
+        </aside>
+      </section>
+
+      <section class="signal-grid">
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Checks</p>
+              <h2>The shortest path to green.</h2>
+            </div>
+          </div>
+          <div class="fleet-list">
+            {% for check in doctor.checks %}
+            <article class="fleet-row urgency-{{ 'watch' if check.ok else 'high' }}">
+              <div>
+                <p class="panel-label">{{ "ok" if check.ok else check.severity }}</p>
+                <strong>{{ check.name }}</strong>
+                <p class="panel-copy">{{ check.detail }}</p>
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Webhook</p>
+              <h2>What GitHub is aiming at right now.</h2>
+            </div>
+          </div>
+          {% if doctor.webhook %}
+          <div class="status-grid">
+            <div class="status-item">
+              <span>Content type</span>
+              <strong>{{ doctor.webhook.content_type or "unknown" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Insecure SSL</span>
+              <strong>{{ doctor.webhook.insecure_ssl or "unknown" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Last delivery</span>
+              <strong>{{ doctor.webhook.last_delivery_at or "none yet" }}</strong>
+            </div>
+            <div class="status-item">
+              <span>Expected base URL</span>
+              <strong>{{ doctor.expected_public_base_url or "unset" }}</strong>
+            </div>
+          </div>
+          <pre class="setup-code"><code>{{ doctor.webhook.url or "Webhook URL missing" }}</code></pre>
+          {% else %}
+          <p class="panel-copy">Glasswall could not load webhook configuration yet.</p>
+          {% endif %}
+        </article>
+
+        <article class="panel panel-emphasis">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">App</p>
+              <h2>The registration Glasswall is operating through.</h2>
+            </div>
+          </div>
+          {% if doctor.app %}
+          <ul class="mini-list">
+            <li><strong>Name:</strong> {{ doctor.app.name or "n/a" }}</li>
+            <li><strong>Slug:</strong> {{ doctor.app.slug or "n/a" }}</li>
+            <li><strong>App ID:</strong> {{ doctor.app.app_id }}</li>
+            <li><strong>Installations reported:</strong> {{ doctor.app.installations_count or doctor.total_installation_count }}</li>
+          </ul>
+          {% if doctor.app.description %}
+          <p class="panel-copy">{{ doctor.app.description }}</p>
+          {% endif %}
+          {% else %}
+          <p class="panel-copy">No authenticated app metadata available yet.</p>
+          {% endif %}
+        </article>
+      </section>
+
+      <section class="panel fleet-signals">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Installations</p>
+            <h2>Where Glasswall can currently act.</h2>
+          </div>
+          <span class="queue-meta">{{ doctor.total_installation_count }} installation(s) · {{ doctor.total_repository_count }} repo target(s)</span>
+        </div>
+        {% if doctor.installations %}
+        <div class="fleet-list">
+          {% for installation in doctor.installations %}
+          <article class="fleet-row urgency-{{ 'watch' if not installation.error and not installation.missing_events and not installation.permission_gaps else 'urgent' }}">
+            <div>
+              <p class="panel-label">{{ installation.account_type or "account" }} · {{ installation.repository_selection }}</p>
+              <strong>{{ installation.account_login or installation.installation_id }}</strong>
+              <p class="panel-copy">
+                {% if installation.error %}
+                {{ installation.error }}
+                {% elif installation.repositories %}
+                {{ installation.repositories | length }} shown of {{ installation.repository_count }} accessible repositories.
+                {% else %}
+                No repositories surfaced from this installation yet.
+                {% endif %}
+              </p>
+              {% if installation.repositories %}
+              <ul class="mini-list mini-list-tight">
+                {% for repository in installation.repositories %}
+                <li>
+                  <strong>{{ repository.full_name }}</strong>
+                  {% if repository.default_branch %} · default branch {{ repository.default_branch }}{% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+            <div class="fleet-metrics">
+              <span>repos {{ installation.repository_count }}</span>
+              {% if installation.suspended %}
+              <span>suspended</span>
+              {% endif %}
+              {% for event in installation.missing_events %}
+              <span>missing {{ event }}</span>
+              {% endfor %}
+              {% for gap in installation.permission_gaps %}
+              <span>{{ gap }}</span>
+              {% endfor %}
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="panel-copy">Install the app on a repository or organization, then come back here to verify live coverage.</p>
+        {% endif %}
+      </section>
+
+      <section class="panel fleet-signals">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Recent deliveries</p>
+            <h2>Whether GitHub is actually reaching Glasswall.</h2>
+          </div>
+          <span class="queue-meta">
+            {{ doctor.webhook.recent_success_count if doctor.webhook else 0 }} success ·
+            {{ doctor.webhook.recent_failure_count if doctor.webhook else 0 }} failure
+          </span>
+        </div>
+        {% if doctor.recent_deliveries %}
+        <div class="fleet-list">
+          {% for delivery in doctor.recent_deliveries %}
+          <article class="fleet-row urgency-{{ 'watch' if delivery.status_code and delivery.status_code < 400 else 'high' }}">
+            <div>
+              <p class="panel-label">delivery #{{ delivery.delivery_id }}</p>
+              <strong>{{ delivery.event }}{% if delivery.action %} / {{ delivery.action }}{% endif %}</strong>
+              <p class="panel-copy">{{ delivery.delivered_at or "unknown time" }}</p>
+            </div>
+            <div class="fleet-metrics">
+              <span>status {{ delivery.status_code or "unknown" }}</span>
+              {% if delivery.installation_id %}
+              <span>installation {{ delivery.installation_id }}</span>
+              {% endif %}
+              {% if delivery.redelivery %}
+              <span>redelivery</span>
+              {% endif %}
+              {% if delivery.duration_seconds is not none %}
+              <span>{{ "%.2f"|format(delivery.duration_seconds) }}s</span>
+              {% endif %}
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="panel-copy">No recent deliveries yet. Open a pull request or push to the default branch after installation to watch the pipeline come alive.</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

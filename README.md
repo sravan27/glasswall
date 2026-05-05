@@ -77,6 +77,7 @@ glasswall showcase examples/showcase/python-legacy examples/showcase/npm-legacy 
 glasswall fleet --format summary
 glasswall scorecard --format markdown
 glasswall github-setup --public-base-url https://glasswall.example.com --account-type personal
+glasswall github-doctor --format summary
 glasswall history /path/to/repo
 glasswall serve --host 127.0.0.1 --port 8080
 ```
@@ -97,6 +98,7 @@ glasswall showcase examples/showcase/python-legacy examples/showcase/npm-legacy 
 glasswall fleet --format markdown
 glasswall scorecard --format json
 glasswall github-setup --public-base-url https://glasswall.example.com --format markdown
+glasswall github-doctor --format markdown
 glasswall scan /path/to/repo --policy .glasswall.yml --format summary
 glasswall history /path/to/repo --limit 20
 glasswall serve
@@ -119,6 +121,8 @@ glasswall serve
 `glasswall scorecard` sits one layer above `fleet`. It turns those same histories into grades and trend labels so teams can tell whether they are hardening, holding, or backsliding without reading every raw metric first.
 
 `glasswall github-setup` previews the GitHub App onboarding manifest, webhook/callback URLs, and runtime checks before you ever leave the terminal.
+
+`glasswall github-doctor` verifies the live GitHub App state after setup. It checks credentials, authenticated app metadata, webhook URL alignment, installation coverage, repository visibility, and recent webhook delivery outcomes so operators can see whether GitHub App mode is genuinely alive or only partially configured.
 
 ## Live showcase
 
@@ -147,6 +151,7 @@ Those demo targets are intentionally small and exact-pinned so the site shows th
 - `GET /api/fleet`
 - `GET /api/scorecard`
 - `GET /api/github/status`
+- `GET /api/github/doctor`
 - `POST /api/scans`
 - `POST /api/plans`
 - `POST /api/remediate`
@@ -208,6 +213,7 @@ Current behavior:
 - renders a remediation-first comment and updates it in place by default
 - can open or update a remediation PR from `push` events on the default branch when auto-PR mode is enabled
 - includes a local manifest-driven onboarding flow at `/github/setup` that can create the GitHub App registration payload, receive the callback, and render copyable credentials
+- includes a live doctor view at `/github/doctor` plus `GET /api/github/doctor` so operators can verify that the app is authenticated, installed, and receiving healthy webhook traffic
 
 ### GitHub App setup flow
 
@@ -218,6 +224,7 @@ If you want Glasswall to create the GitHub App registration payload for you:
 3. Open `/github/setup` in that running app.
 4. Complete the manifest-driven GitHub registration flow.
 5. Copy the returned `.env` snippet into the Glasswall runtime and restart.
+6. Run `glasswall github-doctor` or open `/github/doctor` to verify the app, installs, and webhook deliveries.
 
 You can preview the same manifest and checklist from the CLI:
 
@@ -231,6 +238,7 @@ glasswall github-setup \
 
 Required environment:
 
+- `GLASSWALL_PUBLIC_BASE_URL`
 - `GLASSWALL_GITHUB_APP_ID`
 - `GLASSWALL_GITHUB_PRIVATE_KEY`
 - `GLASSWALL_GITHUB_WEBHOOK_SECRET`
