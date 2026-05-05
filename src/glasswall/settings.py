@@ -27,6 +27,7 @@ class Settings:
     github_auto_pr_max_upgrades: int
     github_auto_pr_commit_message: str
     github_auto_pr_title: str
+    github_public_base_url: str | None = None
 
 
 def load_settings() -> Settings:
@@ -55,4 +56,5 @@ def load_settings() -> Settings:
             "GLASSWALL_GITHUB_AUTO_PR_TITLE",
             "[glasswall] apply top supported patch-gap remediation",
         ),
+        github_public_base_url=os.environ.get("GLASSWALL_PUBLIC_BASE_URL"),
     )

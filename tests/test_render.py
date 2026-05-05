@@ -1,6 +1,6 @@
-from glasswall.analytics import FleetOverview, FleetSignal, TargetPressure
+from glasswall.analytics import FleetOverview, FleetScorecard, FleetSignal, TargetPressure, TargetScorecard
 from glasswall.models import Dependency, Finding, RemediationFileChange, RemediationRun, ScanResult, Vulnerability
-from glasswall.render import render_fleet_summary, render_remediation_summary, render_sarif
+from glasswall.render import render_fleet_summary, render_remediation_summary, render_sarif, render_scorecard_summary
 
 
 def test_render_sarif_uses_canonical_vuln_id_and_relative_lockfile() -> None:
@@ -124,3 +124,63 @@ def test_render_fleet_summary_reports_mttp_and_targets() -> None:
     assert "Average resolved patch-gap MTTP (days): 6.5" in rendered
     assert "open=3 urgent=1 patch-gap=2" in rendered
     assert "[Newly dangerous] /repo-a requests@2.19.0 CVE-2026-1234" in rendered
+
+
+def test_render_scorecard_summary_reports_grades_and_targets() -> None:
+    scorecard = FleetScorecard(
+        generated_at="2026-04-14T00:00:00+00:00",
+        fleet_score=72,
+        grade="C",
+        status_label="exposed",
+        trend_label="backsliding",
+        summary="Newly dangerous findings are arriving faster than the fleet is clearing them.",
+        average_target_score=72.0,
+        strongest_target_path="/repo-b",
+        weakest_target_path="/repo-a",
+        healthy_target_count=1,
+        exposed_target_count=1,
+        targets=(
+            TargetScorecard(
+                target_path="/repo-b",
+                latest_scan_id=4,
+                latest_generated_at="2026-04-14T00:00:00+00:00",
+                score=84,
+                grade="B",
+                status_label="stable",
+                trend_label="recovering",
+                summary="Latest scan is clear of open findings.",
+                reasons=("Latest scan is clear of open findings.",),
+                open_finding_count=0,
+                urgent_open_finding_count=0,
+                patch_gap_open_finding_count=0,
+                newly_dangerous_count=0,
+                recently_resolved_count=1,
+                oldest_open_public_days=None,
+                average_resolved_mttp_days=4.0,
+            ),
+            TargetScorecard(
+                target_path="/repo-a",
+                latest_scan_id=2,
+                latest_generated_at="2026-04-14T00:00:00+00:00",
+                score=42,
+                grade="D",
+                status_label="lagging",
+                trend_label="backsliding",
+                summary="1 urgent findings are still open.",
+                reasons=("1 urgent findings are still open.",),
+                open_finding_count=2,
+                urgent_open_finding_count=1,
+                patch_gap_open_finding_count=1,
+                newly_dangerous_count=1,
+                recently_resolved_count=0,
+                oldest_open_public_days=4.0,
+                average_resolved_mttp_days=None,
+            ),
+        ),
+    )
+
+    rendered = render_scorecard_summary(scorecard)
+
+    assert "Fleet score: C (72)" in rendered
+    assert "Trend: backsliding" in rendered
+    assert "[D] /repo-a score=42 status=lagging trend=backsliding" in rendered

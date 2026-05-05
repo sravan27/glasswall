@@ -5,7 +5,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from glasswall.analytics import FleetOverview, FleetSignal
+from glasswall.analytics import FleetOverview, FleetScorecard, FleetSignal, TargetScorecard
+from glasswall.github_setup import GitHubSetupReport
+from glasswall.github_doctor import GitHubDoctorReport
 from glasswall.diffing import ScanDelta
 from glasswall.models import (
     Finding,
@@ -16,6 +18,7 @@ from glasswall.models import (
     RemediationSkip,
     ScanResult,
 )
+from glasswall.showcase import ShowcaseBundle
 
 
 def render_scan_output(result: ScanResult, output_format: str, delta: ScanDelta | None = None) -> str:
@@ -53,6 +56,38 @@ def render_fleet_output(overview: FleetOverview, output_format: str) -> str:
     if output_format == "markdown":
         return render_fleet_markdown(overview)
     return render_fleet_summary(overview)
+
+
+def render_scorecard_output(scorecard: FleetScorecard, output_format: str) -> str:
+    if output_format == "json":
+        return json.dumps(scorecard.to_dict(), indent=2)
+    if output_format == "markdown":
+        return render_scorecard_markdown(scorecard)
+    return render_scorecard_summary(scorecard)
+
+
+def render_showcase_output(bundle: ShowcaseBundle, output_format: str) -> str:
+    if output_format == "json":
+        return json.dumps(bundle.to_dict(), indent=2)
+    if output_format == "markdown":
+        return render_showcase_markdown(bundle)
+    return render_showcase_summary(bundle)
+
+
+def render_github_setup_output(report: GitHubSetupReport, output_format: str) -> str:
+    if output_format == "json":
+        return json.dumps(report.to_dict(), indent=2)
+    if output_format == "markdown":
+        return render_github_setup_markdown(report)
+    return render_github_setup_summary(report)
+
+
+def render_github_doctor_output(report: GitHubDoctorReport, output_format: str) -> str:
+    if output_format == "json":
+        return json.dumps(report.to_dict(), indent=2)
+    if output_format == "markdown":
+        return render_github_doctor_markdown(report)
+    return render_github_doctor_summary(report)
 
 
 def write_output(text: str, output_path: str | None) -> None:
@@ -259,6 +294,255 @@ def render_fleet_markdown(overview: FleetOverview) -> str:
     return "\n".join(lines)
 
 
+def render_showcase_summary(bundle: ShowcaseBundle) -> str:
+    lines = [
+        f"Showcase: {bundle.title}",
+        f"Generated: {bundle.generated_at}",
+        f"Fleet score: {bundle.scorecard.grade} ({bundle.scorecard.fleet_score})",
+        f"Targets: {bundle.fleet.target_count}",
+        f"Open findings: {bundle.fleet.total_open_findings}",
+        f"Urgent findings: {bundle.fleet.total_urgent_findings}",
+        f"Patch-gap findings: {bundle.fleet.total_patch_gap_findings}",
+        f"Average resolved patch-gap MTTP (days): {bundle.fleet.average_resolved_mttp_days if bundle.fleet.average_resolved_mttp_days is not None else 'n/a'}",
+    ]
+    if bundle.targets:
+        lines.extend(["", "Target snapshots:"])
+        for target in bundle.targets:
+            lines.append(
+                f"{target.label}: grade={target.scorecard.grade} score={target.scorecard.score} "
+                f"findings={target.scan.finding_count} urgent={target.urgent_finding_count} "
+                f"patch-gap={target.patch_gap_finding_count} recommendations={target.plan.recommendation_count}"
+            )
+    return "\n".join(lines)
+
+
+def render_showcase_markdown(bundle: ShowcaseBundle) -> str:
+    lines = [
+        "# Glasswall Showcase",
+        "",
+        f"- Title: `{bundle.title}`",
+        f"- Generated: `{bundle.generated_at}`",
+        f"- Fleet score: `{bundle.scorecard.grade} / {bundle.scorecard.fleet_score}`",
+        f"- Targets: `{bundle.fleet.target_count}`",
+        f"- Open findings: `{bundle.fleet.total_open_findings}`",
+        f"- Urgent findings: `{bundle.fleet.total_urgent_findings}`",
+        f"- Patch-gap findings: `{bundle.fleet.total_patch_gap_findings}`",
+        f"- Average resolved patch-gap MTTP (days): `{bundle.fleet.average_resolved_mttp_days if bundle.fleet.average_resolved_mttp_days is not None else 'n/a'}`",
+    ]
+    for target in bundle.targets:
+        lines.extend(
+            [
+                "",
+                f"## {target.label}",
+                f"- Target: `{target.target_path}`",
+                f"- Score: `{target.scorecard.grade} / {target.scorecard.score}`",
+                f"- Trend: `{target.scorecard.trend_label}`",
+                f"- Findings: `{target.scan.finding_count}`",
+                f"- Urgent findings: `{target.urgent_finding_count}`",
+                f"- Patch-gap findings: `{target.patch_gap_finding_count}`",
+                f"- Recommendations: `{target.plan.recommendation_count}`",
+                f"- Dry-run changed files: `{target.remediation_preview.changed_file_count}`",
+            ]
+        )
+        if target.scorecard.reasons:
+            lines.append("")
+            lines.append("### Scorecard reasons")
+            for reason in target.scorecard.reasons:
+                lines.append(f"- {reason}")
+        if target.scan.findings:
+            lines.append("")
+            lines.append("### Top findings")
+            for finding in target.scan.findings[:5]:
+                lines.append(_summary_line(finding))
+        if target.plan.recommendations:
+            lines.append("")
+            lines.append("### Top remediation queue")
+            for recommendation in target.plan.recommendations[:5]:
+                lines.append(_plan_summary_line(recommendation))
+    return "\n".join(lines)
+
+
+def render_scorecard_summary(scorecard: FleetScorecard) -> str:
+    lines = [
+        f"Fleet scorecard generated: {scorecard.generated_at}",
+        f"Fleet score: {scorecard.grade} ({scorecard.fleet_score})",
+        f"Status: {scorecard.status_label}",
+        f"Trend: {scorecard.trend_label}",
+        f"Average target score: {scorecard.average_target_score if scorecard.average_target_score is not None else 'n/a'}",
+        f"Healthy targets: {scorecard.healthy_target_count}",
+        f"Exposed targets: {scorecard.exposed_target_count}",
+        f"Strongest target: {scorecard.strongest_target_path or 'n/a'}",
+        f"Weakest target: {scorecard.weakest_target_path or 'n/a'}",
+        f"Summary: {scorecard.summary}",
+    ]
+    if scorecard.targets:
+        lines.extend(["", "Target grades:"])
+        for target in scorecard.targets:
+            lines.append(_scorecard_target_summary_line(target))
+    return "\n".join(lines)
+
+
+def render_scorecard_markdown(scorecard: FleetScorecard) -> str:
+    lines = [
+        "# Glasswall Fleet Scorecard",
+        "",
+        f"- Generated: `{scorecard.generated_at}`",
+        f"- Fleet score: `{scorecard.grade} / {scorecard.fleet_score}`",
+        f"- Status: `{scorecard.status_label}`",
+        f"- Trend: `{scorecard.trend_label}`",
+        f"- Average target score: `{scorecard.average_target_score if scorecard.average_target_score is not None else 'n/a'}`",
+        f"- Healthy targets: `{scorecard.healthy_target_count}`",
+        f"- Exposed targets: `{scorecard.exposed_target_count}`",
+        f"- Strongest target: `{scorecard.strongest_target_path or 'n/a'}`",
+        f"- Weakest target: `{scorecard.weakest_target_path or 'n/a'}`",
+        f"- Summary: `{scorecard.summary}`",
+    ]
+    if scorecard.targets:
+        lines.extend(["", "## Target grades"])
+        for target in scorecard.targets:
+            lines.append(_scorecard_target_summary_line(target))
+    return "\n".join(lines)
+
+
+def render_github_setup_summary(report: GitHubSetupReport) -> str:
+    lines = [
+        "GitHub App setup",
+        f"Public base URL: {report.public_base_url or 'missing'}",
+        f"Registration target: {report.account_type}{f'/{report.owner}' if report.owner else ''}",
+        f"Action URL: {report.action_url or 'unavailable'}",
+        f"Webhook URL: {report.webhook_url or 'unavailable'}",
+    ]
+    if report.checks:
+        lines.extend(["", "Checks:"])
+        for check in report.checks:
+            status = "ok" if check.ok else check.severity
+            lines.append(f"- {check.name}: {status} - {check.detail}")
+    return "\n".join(lines)
+
+
+def render_github_setup_markdown(report: GitHubSetupReport) -> str:
+    lines = [
+        "# Glasswall GitHub App Setup",
+        "",
+        f"- Public base URL: `{report.public_base_url or 'missing'}`",
+        f"- Registration target: `{report.account_type}{f'/{report.owner}' if report.owner else ''}`",
+        f"- Action URL: `{report.action_url or 'unavailable'}`",
+        f"- Webhook URL: `{report.webhook_url or 'unavailable'}`",
+    ]
+    if report.manifest is not None:
+        lines.extend(["", "## Manifest preview", "```json", json.dumps(report.manifest, indent=2), "```"])
+    if report.checks:
+        lines.extend(["", "## Checks"])
+        for check in report.checks:
+            status = "ok" if check.ok else check.severity
+            lines.append(f"- **{check.name}**: `{status}` {check.detail}")
+    lines.extend(["", "## Environment template", "```dotenv", report.env_template, "```"])
+    return "\n".join(lines)
+
+
+def render_github_doctor_summary(report: GitHubDoctorReport) -> str:
+    lines = [
+        "GitHub App doctor",
+        f"Generated: {report.generated_at}",
+        f"Configured: {'yes' if report.configured else 'no'}",
+        f"Summary: {report.summary}",
+        f"Installations: {report.total_installation_count}",
+        f"Repositories: {report.total_repository_count}",
+        f"Recent deliveries: {len(report.recent_deliveries)}",
+    ]
+    if report.app is not None:
+        lines.append(f"App: {report.app.slug or report.app.name or report.app.app_id}")
+    if report.webhook is not None:
+        lines.append(f"Webhook URL: {report.webhook.url or 'missing'}")
+    if report.checks:
+        lines.extend(["", "Checks:"])
+        for check in report.checks:
+            status = "ok" if check.ok else check.severity
+            lines.append(f"- {check.name}: {status} - {check.detail}")
+    if report.installations:
+        lines.extend(["", "Installations:"])
+        for installation in report.installations:
+            status = "ok"
+            if installation.error or installation.missing_events or installation.permission_gaps:
+                status = "warning"
+            lines.append(
+                f"- {installation.account_login or installation.installation_id}: {status} "
+                f"repos={installation.repository_count} selection={installation.repository_selection}"
+            )
+    if report.recent_deliveries:
+        lines.extend(["", "Recent deliveries:"])
+        for delivery in report.recent_deliveries[:5]:
+            lines.append(
+                f"- #{delivery.delivery_id} {delivery.event}"
+                f"{f'/{delivery.action}' if delivery.action else ''} "
+                f"status={delivery.status_code or 'unknown'} at {delivery.delivered_at or 'unknown'}"
+            )
+    return "\n".join(lines)
+
+
+def render_github_doctor_markdown(report: GitHubDoctorReport) -> str:
+    lines = [
+        "# Glasswall GitHub App Doctor",
+        "",
+        f"- Generated: `{report.generated_at}`",
+        f"- Configured: `{'yes' if report.configured else 'no'}`",
+        f"- Summary: `{report.summary}`",
+        f"- Installations: `{report.total_installation_count}`",
+        f"- Repositories: `{report.total_repository_count}`",
+        f"- Recent deliveries: `{len(report.recent_deliveries)}`",
+    ]
+    if report.expected_public_base_url:
+        lines.append(f"- Expected public base URL: `{report.expected_public_base_url}`")
+    if report.app is not None:
+        lines.extend(
+            [
+                "",
+                "## App",
+                f"- App: `{report.app.slug or report.app.name or report.app.app_id}`",
+                f"- Install URL: `{report.app.install_url or 'n/a'}`",
+                f"- Settings URL: `{report.app.html_url or 'n/a'}`",
+            ]
+        )
+    if report.webhook is not None:
+        lines.extend(
+            [
+                "",
+                "## Webhook",
+                f"- URL: `{report.webhook.url or 'missing'}`",
+                f"- Content type: `{report.webhook.content_type or 'unknown'}`",
+                f"- Recent successes: `{report.webhook.recent_success_count}`",
+                f"- Recent failures: `{report.webhook.recent_failure_count}`",
+            ]
+        )
+    if report.checks:
+        lines.extend(["", "## Checks"])
+        for check in report.checks:
+            status = "ok" if check.ok else check.severity
+            lines.append(f"- **{check.name}**: `{status}` {check.detail}")
+    if report.installations:
+        lines.extend(["", "## Installations"])
+        for installation in report.installations:
+            lines.append(
+                f"- `{installation.account_login or installation.installation_id}` "
+                f"repos=`{installation.repository_count}` selection=`{installation.repository_selection}`"
+            )
+            if installation.missing_events:
+                lines.append(f"  missing-events=`{', '.join(installation.missing_events)}`")
+            if installation.permission_gaps:
+                lines.append(f"  permission-gaps=`{', '.join(installation.permission_gaps)}`")
+            if installation.error:
+                lines.append(f"  error=`{installation.error}`")
+    if report.recent_deliveries:
+        lines.extend(["", "## Recent deliveries"])
+        for delivery in report.recent_deliveries:
+            lines.append(
+                f"- `#{delivery.delivery_id}` `{delivery.event}`"
+                f"{f'/{delivery.action}' if delivery.action else ''} "
+                f"status=`{delivery.status_code or 'unknown'}` at `{delivery.delivered_at or 'unknown'}`"
+            )
+    return "\n".join(lines)
+
+
 def render_sarif(result: ScanResult) -> dict[str, Any]:
     rules = {}
     results: list[dict[str, Any]] = []
@@ -446,4 +730,13 @@ def _fleet_signal_summary_line(signal: FleetSignal) -> str:
         f"{signal.vulnerability_id} urgency={signal.urgency_label} "
         f"patch-gap={'yes' if signal.patch_gap else 'no'} "
         f"public-days={signal.days_since_public if signal.days_since_public is not None else 'n/a'}"
+    )
+
+
+def _scorecard_target_summary_line(target: TargetScorecard) -> str:
+    return (
+        f"- [{target.grade}] {target.target_path} score={target.score} "
+        f"status={target.status_label} trend={target.trend_label} "
+        f"open={target.open_finding_count} urgent={target.urgent_open_finding_count} "
+        f"patch-gap={target.patch_gap_open_finding_count}"
     )

@@ -22,7 +22,9 @@ That matters more in the Project Glasswing / Claude Mythos world than another ge
 - Applies the safest currently supported upgrades for exact-pinned `requirements.txt` and exact-pinned npm direct dependencies backed by `package-lock.json` or `npm-shrinkwrap.json`.
 - Stores scan history in SQLite, computes deltas between scans, and exposes a FastAPI dashboard plus JSON API.
 - Computes fleet pressure and resolved patch-gap MTTP from saved scan history.
+- Grades fleet posture with a deterministic scorecard that weighs live urgency, patch-gap backlog, public exposure age, recent drift, and resolved MTTP.
 - Surfaces a change feed for newly dangerous and recently cleared findings across the fleet.
+- Exports public proof bundles with `glasswall showcase` so GitHub Pages and demo repos can render live product output instead of hand-written marketing copy.
 - Emits SARIF for GitHub code scanning and Markdown summaries for GitHub Actions job summaries.
 - Applies optional `.glasswall.yml` policy files so teams can suppress noise without hiding risk silently.
 
@@ -71,7 +73,11 @@ glasswall scan /path/to/repo --format summary --fail-on high
 glasswall plan /path/to/repo --format markdown
 glasswall remediate /path/to/repo --format markdown
 glasswall scan /path/to/repo --format sarif --output reports/glasswall.sarif
+glasswall showcase examples/showcase/python-legacy examples/showcase/npm-legacy --format markdown
 glasswall fleet --format summary
+glasswall scorecard --format markdown
+glasswall github-setup --public-base-url https://glasswall.example.com --account-type personal
+glasswall github-doctor --format summary
 glasswall history /path/to/repo
 glasswall serve --host 127.0.0.1 --port 8080
 ```
@@ -88,7 +94,11 @@ glasswall plan /path/to/repo --format summary
 glasswall plan /path/to/repo --format json --output reports/glasswall-plan.json
 glasswall remediate /path/to/repo --format summary
 glasswall remediate /path/to/repo --apply --max-upgrades 3 --format markdown
+glasswall showcase examples/showcase/python-legacy examples/showcase/npm-legacy --format json --output site/demo.json
 glasswall fleet --format markdown
+glasswall scorecard --format json
+glasswall github-setup --public-base-url https://glasswall.example.com --format markdown
+glasswall github-doctor --format markdown
 glasswall scan /path/to/repo --policy .glasswall.yml --format summary
 glasswall history /path/to/repo --limit 20
 glasswall serve
@@ -104,7 +114,29 @@ glasswall serve
 
 `glasswall remediate` is the first automation layer. Today it safely updates exact-pinned `requirements.txt` entries plus exact-pinned npm direct dependencies when an adjacent `package.json` is backed by `package-lock.json` or `npm-shrinkwrap.json`. Unsupported manifests and non-exact npm ranges stay explicit in the output so teams know where human review or ecosystem-specific tooling is still required.
 
+`glasswall showcase` turns one or more repositories into a compact proof bundle for GitHub Pages, docs, or launch material. The bundle includes per-target scan results, remediation plans, dry-run remediation previews, and a fleet-style summary that can be rendered as JSON or Markdown.
+
 `glasswall fleet` turns scan history into a pressure board. It aggregates current urgent exposure across targets, computes resolved patch-gap MTTP from findings that were resolved after entering a patch-gap window, and highlights what just became dangerous between each target's latest two scans.
+
+`glasswall scorecard` sits one layer above `fleet`. It turns those same histories into grades and trend labels so teams can tell whether they are hardening, holding, or backsliding without reading every raw metric first.
+
+`glasswall github-setup` previews the GitHub App onboarding manifest, webhook/callback URLs, and runtime checks before you ever leave the terminal.
+
+`glasswall github-doctor` verifies the live GitHub App state after setup. It checks credentials, authenticated app metadata, webhook URL alignment, installation coverage, repository visibility, and recent webhook delivery outcomes so operators can see whether GitHub App mode is genuinely alive or only partially configured.
+
+## Live showcase
+
+The public site reads a generated bundle from `site/demo.json`. You can refresh it locally with:
+
+```bash
+glasswall showcase \
+  examples/showcase/python-legacy \
+  examples/showcase/npm-legacy \
+  --format json \
+  --output site/demo.json
+```
+
+Those demo targets are intentionally small and exact-pinned so the site shows the real supported remediation path, not a synthetic screenshot.
 
 ## API
 
@@ -117,7 +149,9 @@ glasswall serve
 - `GET /api/scans/{id}/plan`
 - `GET /api/plans/latest`
 - `GET /api/fleet`
+- `GET /api/scorecard`
 - `GET /api/github/status`
+- `GET /api/github/doctor`
 - `POST /api/scans`
 - `POST /api/plans`
 - `POST /api/remediate`
@@ -165,6 +199,8 @@ Remediation PR workflow example: [examples/github-actions/remediation-pr.yml](/U
 
 Daily fleet digest example: [examples/github-actions/daily-fleet-digest.yml](/Users/sravansridhar/Documents/Codex/glasswall/examples/github-actions/daily-fleet-digest.yml)
 
+Showcase refresh workflow: [.github/workflows/showcase.yml](/Users/sravansridhar/Documents/Codex/glasswall/.github/workflows/showcase.yml)
+
 ## GitHub App Mode
 
 Glasswall can also run as a GitHub App webhook receiver so pull requests get patch-gap comments automatically.
@@ -176,9 +212,33 @@ Current behavior:
 - scans the PR head commit, including forked pull requests
 - renders a remediation-first comment and updates it in place by default
 - can open or update a remediation PR from `push` events on the default branch when auto-PR mode is enabled
+- includes a local manifest-driven onboarding flow at `/github/setup` that can create the GitHub App registration payload, receive the callback, and render copyable credentials
+- includes a live doctor view at `/github/doctor` plus `GET /api/github/doctor` so operators can verify that the app is authenticated, installed, and receiving healthy webhook traffic
+
+### GitHub App setup flow
+
+If you want Glasswall to create the GitHub App registration payload for you:
+
+1. Expose your Glasswall server at a public HTTPS URL.
+2. Run `glasswall serve --host 0.0.0.0 --port 8080`.
+3. Open `/github/setup` in that running app.
+4. Complete the manifest-driven GitHub registration flow.
+5. Copy the returned `.env` snippet into the Glasswall runtime and restart.
+6. Run `glasswall github-doctor` or open `/github/doctor` to verify the app, installs, and webhook deliveries.
+
+You can preview the same manifest and checklist from the CLI:
+
+```bash
+glasswall github-setup \
+  --public-base-url https://glasswall.example.com \
+  --account-type organization \
+  --owner your-org \
+  --format markdown
+```
 
 Required environment:
 
+- `GLASSWALL_PUBLIC_BASE_URL`
 - `GLASSWALL_GITHUB_APP_ID`
 - `GLASSWALL_GITHUB_PRIVATE_KEY`
 - `GLASSWALL_GITHUB_WEBHOOK_SECRET`

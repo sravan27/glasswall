@@ -8,18 +8,25 @@ from pathlib import Path
 
 import uvicorn
 
-from glasswall.analytics import build_fleet_overview
+from glasswall.analytics import build_fleet_overview, build_fleet_scorecard
 from glasswall.diffing import build_scan_delta
+from glasswall.github_doctor import GitHubDoctorService
+from glasswall.github_setup import GitHubSetupService
 from glasswall.models import ScanOverview, urgency_rank
 from glasswall.policy import load_scan_policy
 from glasswall.render import (
     render_fleet_output,
+    render_github_doctor_output,
+    render_github_setup_output,
     render_plan_output,
     render_remediation_output,
     render_scan_output,
+    render_scorecard_output,
+    render_showcase_output,
     write_output,
 )
 from glasswall.service import GlasswallService, normalize_target_path
+from glasswall.showcase import build_showcase
 from glasswall.settings import load_settings
 from glasswall.storage import Database
 
@@ -44,6 +51,22 @@ def build_parser() -> argparse.ArgumentParser:
     fleet_parser = subparsers.add_parser("fleet", help="Show fleet pressure and MTTP from scan history")
     fleet_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
 
+    scorecard_parser = subparsers.add_parser("scorecard", help="Show fleet grades and patch-gap scorecards from scan history")
+    scorecard_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
+
+    github_setup_parser = subparsers.add_parser("github-setup", help="Preview GitHub App onboarding manifest and checks")
+    github_setup_parser.add_argument("--public-base-url", help="Externally reachable Glasswall base URL")
+    github_setup_parser.add_argument("--account-type", choices=("personal", "organization"), default="personal")
+    github_setup_parser.add_argument("--owner", help="Organization slug when account type is organization")
+    github_setup_parser.add_argument("--app-name", default="Glasswall Patch Gap Ops")
+    github_setup_parser.add_argument("--public-app", action="store_true")
+    github_setup_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
+    github_setup_parser.add_argument("--output", help="Optional file path for rendered output")
+
+    github_doctor_parser = subparsers.add_parser("github-doctor", help="Verify live GitHub App readiness and webhook health")
+    github_doctor_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
+    github_doctor_parser.add_argument("--output", help="Optional file path for rendered output")
+
     plan_parser = subparsers.add_parser("plan", help="Build a remediation plan for a repository path")
     plan_parser.add_argument("path", help="Local repository path to plan")
     plan_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
@@ -57,6 +80,13 @@ def build_parser() -> argparse.ArgumentParser:
     remediate_parser.add_argument("--output", help="Optional file path for rendered output")
     remediate_parser.add_argument("--apply", action="store_true", help="Write supported remediation changes to disk")
     remediate_parser.add_argument("--max-upgrades", type=int, help="Limit the number of top recommendations considered")
+
+    showcase_parser = subparsers.add_parser("showcase", help="Build a static showcase bundle for demos and Pages")
+    showcase_parser.add_argument("paths", nargs="+", help="Repository paths to include in the showcase")
+    showcase_parser.add_argument("--title", default="Glasswall Showcase")
+    showcase_parser.add_argument("--format", choices=("summary", "json", "markdown"), default="summary")
+    showcase_parser.add_argument("--output", help="Optional file path for rendered output")
+    showcase_parser.add_argument("--max-upgrades", type=int, help="Limit dry-run remediation preview to the top recommendations")
 
     serve_parser = subparsers.add_parser("serve", help="Run the Glasswall web UI")
     serve_parser.add_argument("--host", default="127.0.0.1")
@@ -113,6 +143,49 @@ def run_fleet(output_format: str) -> int:
     return 0
 
 
+def run_scorecard(output_format: str) -> int:
+    settings = load_settings()
+    database = Database(settings.db_path)
+    histories = tuple(database.scan_history(target_path) for target_path in database.list_target_paths())
+    scorecard = build_fleet_scorecard(build_fleet_overview(histories))
+    print(render_scorecard_output(scorecard, output_format))
+    return 0
+
+
+def run_github_setup(
+    public_base_url: str | None,
+    account_type: str,
+    owner: str | None,
+    app_name: str,
+    public_app: bool,
+    output_format: str,
+    output_path: str | None,
+) -> int:
+    settings = load_settings()
+    setup_service = GitHubSetupService(settings=settings)
+    try:
+        report = setup_service.build_report(
+            public_base_url=public_base_url,
+            account_type=account_type,
+            owner=owner,
+            app_name=app_name,
+            public_app=public_app,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}")
+        return 2
+    write_output(render_github_setup_output(report, output_format), output_path)
+    return 0
+
+
+async def run_github_doctor(output_format: str, output_path: str | None) -> int:
+    settings = load_settings()
+    doctor = GitHubDoctorService(settings=settings)
+    report = await doctor.diagnose()
+    write_output(render_github_doctor_output(report, output_format), output_path)
+    return 0
+
+
 async def run_plan(target_path: str, output_format: str, output_path: str | None, policy_path: str | None) -> int:
     settings = load_settings()
     service = GlasswallService(settings=settings)
@@ -142,6 +215,25 @@ async def run_remediate(
         max_recommendations=max_upgrades,
     )
     write_output(render_remediation_output(result, output_format), output_path)
+    return 0
+
+
+async def run_showcase(
+    target_paths: list[str],
+    title: str,
+    output_format: str,
+    output_path: str | None,
+    max_upgrades: int | None,
+) -> int:
+    settings = load_settings()
+    service = GlasswallService(settings=settings)
+    bundle = await build_showcase(
+        target_paths,
+        title=title,
+        service=service,
+        max_recommendations=max_upgrades,
+    )
+    write_output(render_showcase_output(bundle, output_format), output_path)
     return 0
 
 
@@ -184,6 +276,23 @@ def main() -> int:
     if args.command == "fleet":
         return run_fleet(args.format)
 
+    if args.command == "scorecard":
+        return run_scorecard(args.format)
+
+    if args.command == "github-setup":
+        return run_github_setup(
+            public_base_url=args.public_base_url,
+            account_type=args.account_type,
+            owner=args.owner,
+            app_name=args.app_name,
+            public_app=args.public_app,
+            output_format=args.format,
+            output_path=args.output,
+        )
+
+    if args.command == "github-doctor":
+        return asyncio.run(run_github_doctor(args.format, args.output))
+
     if args.command == "plan":
         return asyncio.run(
             run_plan(
@@ -208,6 +317,17 @@ def main() -> int:
                 output_path=args.output,
                 policy_path=args.policy,
                 apply=args.apply,
+                max_upgrades=args.max_upgrades,
+            )
+        )
+
+    if args.command == "showcase":
+        return asyncio.run(
+            run_showcase(
+                target_paths=args.paths,
+                title=args.title,
+                output_format=args.format,
+                output_path=args.output,
                 max_upgrades=args.max_upgrades,
             )
         )

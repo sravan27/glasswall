@@ -82,6 +82,10 @@
             <code>glasswall scan /repo --format sarif --fail-on urgent</code>
             <code>POST /github/webhooks</code>
           </div>
+          <div class="action-row">
+            <a class="link-button" href="/github/setup">Open GitHub setup</a>
+            <a class="link-button" href="/github/doctor">Run GitHub doctor</a>
+          </div>
         </aside>
       </section>
 
@@ -147,6 +151,67 @@
           <strong>{{ fleet.average_resolved_mttp_days if fleet.average_resolved_mttp_days is not none else "n/a" }}</strong>
         </article>
       </section>
+
+      <section class="score-band">
+        <article class="panel panel-emphasis score-hero">
+          <p class="panel-label">Fleet scorecard</p>
+          <h2>Turn patch-gap pressure into a grade teams can actually react to.</h2>
+          <p class="panel-copy">
+            The scorecard weights live urgency, patch-gap backlog, public exposure age, recent drift, and resolved
+            MTTP into a deterministic fleet grade. It is not a vanity number. It is a compact way to show whether the
+            fleet is hardening or quietly falling behind.
+          </p>
+        </article>
+        <article class="metric-card metric-score">
+          <span class="metric-label">Fleet grade</span>
+          <strong>{{ scorecard.grade }}</strong>
+          <span class="metric-meta">{{ scorecard.fleet_score }} / 100 · {{ scorecard.status_label }}</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Trend</span>
+          <strong>{{ scorecard.trend_label }}</strong>
+          <span class="metric-meta">{{ scorecard.summary }}</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Healthy targets</span>
+          <strong>{{ scorecard.healthy_target_count }}</strong>
+        </article>
+        <article class="metric-card metric-hot">
+          <span class="metric-label">Exposed targets</span>
+          <strong>{{ scorecard.exposed_target_count }}</strong>
+        </article>
+      </section>
+
+      {% if scorecard_targets %}
+      <section class="panel score-targets">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Target grades</p>
+            <h2>Which targets are helping, and which ones are dragging the fleet down.</h2>
+          </div>
+          <span class="queue-meta">{{ scorecard.strongest_target_path or "No strongest target yet" }} · strongest</span>
+        </div>
+        <div class="fleet-list">
+          {% for target in scorecard_targets %}
+          <article class="fleet-row urgency-{{ target.status_label }}">
+            <div>
+              <p class="panel-label">{{ target.grade }} · {{ target.status_label }} · {{ target.trend_label }}</p>
+              <strong>{{ target.target_path }}</strong>
+              <p class="panel-copy">{{ target.summary }}</p>
+            </div>
+            <div class="fleet-metrics">
+              <span>score {{ target.score }}</span>
+              <span>open {{ target.open_finding_count }}</span>
+              <span>urgent {{ target.urgent_open_finding_count }}</span>
+              <span>patch-gap {{ target.patch_gap_open_finding_count }}</span>
+              <span>new {{ target.newly_dangerous_count }}</span>
+              <span>cleared {{ target.recently_resolved_count }}</span>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
 
       {% if fleet_signals %}
       <section class="panel fleet-signals">
