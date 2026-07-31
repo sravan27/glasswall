@@ -33,3 +33,34 @@ python -m compileall src
 - explain the operator value, not just the code change
 - add or update tests for behavior changes
 - avoid speculative abstractions unless they make the next safe remediation path easier
+
+## Starter Contribution Path for Patch-Gap Cases
+
+We welcome real-world patch-gap cases from the community! You do not need to write code to contribute—submitting threat intelligence cases helps sharpen Glasswall's detection and prioritization rules.
+
+### Case Triage Checklist
+
+Before submitting a patch-gap case, verify your case meets these quality criteria:
+
+- [ ] **Real-World Evidence:** Includes CVE ID, GHSA ID, vendor advisory link, or public disclosure source.
+- [ ] **Clear Gap Definition:** Explains why existing patches or heuristics missed or delayed detection.
+- [ ] **Reproducible Behavior:** Describes conditions, manifest types, or payload structures triggering the gap.
+- [ ] **Impact & Severity:** Briefly estimates potential exploitability or operational risk.
+
+### What Makes a Strong Patch-Gap Case?
+
+1. **Context over Raw Data:** Explain *why* the threat was missed rather than just attaching log files.
+2. **Minimal Working Example:** Provide a concise payload, requirement snippet, or step-by-step trigger.
+3. **Vendor Reference:** Attach official fix links, security advisories, or commit SHAs.
+
+### Case Lifecycle & Tagging
+
+Submitted cases are triaged and tagged for product integration:
+
+| Tag | Target Outcome |
+|---|---|
+| `type:test-case` | Converts case into automated regression tests |
+| `type:heuristic` | Informs detection rules and urgency scoring logic |
+| `type:dashboard` | Enhances UX visualization and fleet pressure metrics |
+
+> **Product Linkage:** Accepted cases are linked back to shipped product updates, release notes, and detection enhancements to credit community contributors.
